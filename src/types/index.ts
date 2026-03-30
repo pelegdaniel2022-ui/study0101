@@ -1,3 +1,5 @@
+// ── Core entities ──────────────────────────────────────────────────────────
+
 export interface Course {
   id: string
   name: string
@@ -19,43 +21,93 @@ export interface NoteAttachment {
   id: string
   name: string
   type: 'pdf' | 'image' | 'text' | 'other'
-  dataUrl: string // base64 data URL stored locally
+  dataUrl: string
   size: number
   addedAt: number
 }
 
+// ── Stroke-based handwriting model (replaces PNG blob) ────────────────────
+// Coordinates are NORMALISED (0–1) so the canvas survives resize/rotation.
+
+export interface InkPoint {
+  nx: number   // x ÷ canvasWidth  (0–1)
+  ny: number   // y ÷ canvasHeight (0–1)
+  p:  number   // pressure 0–1
+}
+
+export interface InkStroke {
+  id:    string
+  pts:   InkPoint[]
+  color: string   // CSS hex/rgb
+  width: number   // base width 1–6
+  tool:  'pen' | 'highlighter'
+}
+
+// ── Spaced-repetition data (SM-2 algorithm) ────────────────────────────────
+
+export interface ReviewData {
+  easeFactor:  number   // starts at 2.5
+  interval:    number   // days until next review
+  repetitions: number   // consecutive correct reviews
+  nextReview:  number   // Unix ms timestamp
+  lastReview:  number   // Unix ms timestamp
+}
+
+// ── Main note type ─────────────────────────────────────────────────────────
+
 export interface Note {
-  id: string
+  id:        string
   lectureId: string
-  courseId: string
-  title: string
-  content: string        // Tiptap JSON stringified
-  canvasData?: string    // Excalidraw JSON stringified
-  handwritingData?: string // HandwritingCanvas PNG base64
+  courseId:  string
+  title:     string
+  content:   string          // Tiptap JSON stringified
+
+  // Drawing / canvas
+  canvasData?:        string        // Excalidraw JSON
+  handwritingStrokes?: InkStroke[]  // stroke model (new, replaces PNG)
+  /** @deprecated use handwritingStrokes */
+  handwritingData?:   string        // legacy PNG – kept for migration
+
   mode: 'document' | 'canvas' | 'split' | 'handwriting'
-  tags: string[]
-  isRTL?: boolean
-  attachments?: NoteAttachment[]
+
+  // Metadata / PKM
+  tags:            string[]
+  linkedNoteIds?:  string[]    // bidirectional [[wiki-links]]
+  isFavorite?:     boolean
+  isRTL?:          boolean
+  template?:       'blank' | 'cornell' | 'grid' | 'outline'
+  color?:          string      // note accent color for visual grouping
+  reviewData?:     ReviewData  // spaced-repetition scheduling
+  attachments?:    NoteAttachment[]
+
   createdAt: number
   updatedAt: number
 }
 
+// ── Chat / AI ──────────────────────────────────────────────────────────────
+
 export interface ChatMessage {
-  id: string
-  role: 'user' | 'assistant'
-  content: string
+  id:        string
+  role:      'user' | 'assistant'
+  content:   string
   timestamp: number
 }
 
 export interface FlashCard {
-  front: string
-  back: string
+  id?:           string
+  front:         string
+  back:          string
+  reviewData?:   ReviewData   // per-card SRS tracking
 }
 
+// ── Physics simulations ────────────────────────────────────────────────────
+
 export interface SimConfig {
-  type: 'pendulum' | 'projectile' | 'harmonic' | 'wave'
+  type:   'pendulum' | 'projectile' | 'harmonic' | 'wave'
   params: Record<string, number>
 }
+
+// ── Navigation ────────────────────────────────────────────────────────────
 
 export type ActiveView =
   | { type: 'home' }
@@ -65,9 +117,13 @@ export type ActiveView =
   | { type: 'simulations' }
   | { type: 'settings' }
   | { type: 'study-coach'; noteId: string }
+  | { type: 'daily-review' }
+  | { type: 'knowledge-graph' }
+
+// ── API keys ──────────────────────────────────────────────────────────────
 
 export interface APIKeys {
-  openai: string
+  openai:     string
   perplexity: string
-  anthropic: string
+  anthropic:  string
 }
