@@ -72,11 +72,46 @@
   }
 }
 
-/* Tiptap editor content styles */
+/* ─── Note page / Word-like container ─────────────────────────────────────── */
+.note-page-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 16px 48px;
+  min-height: 100%;
+  background: hsl(var(--muted) / 0.4);
+}
+
+.note-page-container > * {
+  width: 100%;
+  max-width: 740px;
+}
+
+/* The "page" card that wraps the ProseMirror content */
+.note-page-container .tiptap {
+  background: hsl(var(--background));
+  box-shadow: 0 1px 3px hsl(0 0% 0% / 0.08), 0 4px 16px hsl(0 0% 0% / 0.06);
+  border-radius: 4px;
+  padding: 48px 64px;
+  max-width: 740px;
+  width: 100%;
+}
+
+.dark .note-page-container .tiptap {
+  background: hsl(var(--card));
+  box-shadow: 0 1px 3px hsl(0 0% 0% / 0.3), 0 4px 20px hsl(0 0% 0% / 0.25);
+}
+
+@media (max-width: 640px) {
+  .note-page-container .tiptap {
+    padding: 24px 20px;
+  }
+}
+
+/* ─── Tiptap / ProseMirror content styles ─────────────────────────────────── */
 .ProseMirror {
   outline: none;
   min-height: 300px;
-  padding: 1rem 2rem;
 }
 
 .ProseMirror p.is-editor-empty:first-child::before {
@@ -85,10 +120,6 @@
   float: left;
   height: 0;
   pointer-events: none;
-}
-
-.ProseMirror > * + * {
-  margin-top: 0.5em;
 }
 
 .ProseMirror ul, .ProseMirror ol {
@@ -112,10 +143,11 @@
 }
 
 .ProseMirror blockquote {
-  border-left: 3px solid hsl(var(--primary));
-  padding-left: 1em;
+  border-left: 3px solid #6d28d9;
+  padding-left: 16px;
+  font-style: italic;
   color: hsl(var(--muted-foreground));
-  margin: 0.5em 0;
+  margin: 1em 0;
 }
 
 .ProseMirror pre {
@@ -140,14 +172,41 @@
   padding: 0;
 }
 
-.ProseMirror h1 { font-size: 1.75em; font-weight: 700; margin: 0.75em 0 0.25em; }
-.ProseMirror h2 { font-size: 1.4em; font-weight: 600; margin: 0.75em 0 0.25em; }
-.ProseMirror h3 { font-size: 1.15em; font-weight: 600; margin: 0.5em 0 0.2em; }
+.ProseMirror h1 {
+  font-size: 28px;
+  font-weight: 700;
+  margin-top: 24px;
+  margin-bottom: 8px;
+  line-height: 1.2;
+}
+
+.ProseMirror h2 {
+  font-size: 22px;
+  font-weight: 600;
+  margin-top: 20px;
+  margin-bottom: 6px;
+  line-height: 1.3;
+}
+
+.ProseMirror h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-top: 16px;
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+
+.ProseMirror p {
+  font-size: 15px;
+  line-height: 1.65;
+  margin-bottom: 12px;
+  margin-top: 0;
+}
 
 .ProseMirror hr {
   border: none;
   border-top: 1px solid hsl(var(--border));
-  margin: 1em 0;
+  margin: 1.5em 0;
 }
 
 .ProseMirror mark {

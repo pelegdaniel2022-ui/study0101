@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Course, Lecture, Note, ActiveView } from '@/types'
+import type { Course, Lecture, Note, NoteAttachment, ActiveView } from '@/types'
 
 interface AppState {
   courses: Course[]
@@ -31,6 +31,9 @@ interface AppState {
   addNote: (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt'>) => Note
   updateNote: (id: string, patch: Partial<Note>) => void
   deleteNote: (id: string) => void
+
+  addAttachment: (noteId: string, attachment: NoteAttachment) => void
+  removeAttachment: (noteId: string, attachmentId: string) => void
 }
 
 export function uid(): string {
@@ -115,6 +118,21 @@ export const useAppStore = create<AppState>()(
           set({ activeView: { type: 'home' } })
         }
       },
+
+      addAttachment: (noteId, attachment) => set((s) => ({
+        notes: s.notes.map((n) =>
+          n.id === noteId
+            ? { ...n, attachments: [...(n.attachments ?? []), attachment], updatedAt: Date.now() }
+            : n
+        ),
+      })),
+      removeAttachment: (noteId, attachmentId) => set((s) => ({
+        notes: s.notes.map((n) =>
+          n.id === noteId
+            ? { ...n, attachments: (n.attachments ?? []).filter((a) => a.id !== attachmentId), updatedAt: Date.now() }
+            : n
+        ),
+      })),
     }),
     { name: 'physics-study-app' }
   )

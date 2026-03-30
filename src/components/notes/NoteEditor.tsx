@@ -18,20 +18,22 @@ import { SlashCommands } from './SlashMenu'
 import { InlineEquation, BlockEquation } from './EquationNode'
 import { SimWidgetNode } from '@/components/simulation/SimWidget'
 import { CanvasEditor } from '@/components/canvas/CanvasEditor'
+import { HandwritingCanvas } from '@/components/canvas/HandwritingCanvas'
+import { FileAttachments } from './FileAttachments'
 import { NoteMetaBar } from './NoteMetaBar'
 import { AISidebar } from '@/components/ai/AISidebar'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { useAIStore } from '@/store/ai'
 import { embedNote } from '@/lib/rag'
 import {
-  Maximize2, Minimize2, FileText, PenLine, Columns2, Bot,
+  Maximize2, Minimize2, FileText, PenLine, Columns2, Bot, Pencil,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import 'katex/dist/katex.min.css'
 
 const lowlight = createLowlight(common)
 
-type NoteMode = 'document' | 'canvas' | 'split'
+type NoteMode = 'document' | 'canvas' | 'split' | 'handwriting'
 
 interface Props {
   noteId: string
@@ -43,6 +45,7 @@ export function NoteEditor({ noteId }: Props) {
   const note = notes.find((n) => n.id === noteId)
   const [aiOpen, setAiOpen] = useState(false)
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved')
+  const [isRTL, setIsRTL] = useState(() => note?.isRTL ?? false)
 
   const editor = useEditor({
     extensions: [
@@ -64,7 +67,7 @@ export function NoteEditor({ noteId }: Props) {
     content: note?.content ? JSON.parse(note.content) : '',
     editorProps: {
       attributes: {
-        class: 'prose prose-sm prose-slate dark:prose-invert max-w-none focus:outline-none min-h-full px-8 py-4',
+        class: 'tiptap prose prose-sm prose-slate dark:prose-invert max-w-none focus:outline-none min-h-[400px]',
       },
     },
     onUpdate: () => {
@@ -88,6 +91,14 @@ export function NoteEditor({ noteId }: Props) {
 
   const scheduleSave = useAutoSave(doSave, 700)
 
+  const handleToggleRTL = useCallback(() => {
+    setIsRTL((prev) => {
+      const next = !prev
+      updateNote(noteId, { isRTL: next })
+      return next
+    })
+  }, [noteId, updateNote])
+
   // Reload content when noteId changes
   useEffect(() => {
     if (!editor) return
@@ -98,6 +109,7 @@ export function NoteEditor({ noteId }: Props) {
       editor.commands.setContent('')
     }
     setSaveStatus('saved')
+    setIsRTL(note?.isRTL ?? false)
   }, [noteId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!note) return null
@@ -111,7 +123,7 @@ export function NoteEditor({ noteId }: Props) {
         {/* Note header */}
         <div className="flex items-center gap-2 px-6 pt-4 pb-0 border-b border-[hsl(var(--border))]">
           <input
-            className="flex-1 text-xl font-bold bg-transparent outline-none placeholder:text-[hsl(var(--muted-foreground))]"
+            className="flex-1 text-[28px] font-bold bg-transparent outline-none border-none placeholder:text-[hsl(var(--muted-foreground))]"
             placeholder="Note title"
             value={note.title}
             onChange={(e) => updateNote(noteId, { title: e.target.value })}
@@ -126,6 +138,9 @@ export function NoteEditor({ noteId }: Props) {
             </ModeBtn>
             <ModeBtn active={mode === 'split'} onClick={() => updateNote(noteId, { mode: 'split' })} title="Split">
               <Columns2 size={14} />
+            </ModeBtn>
+            <ModeBtn active={mode === 'handwriting'} onClick={() => updateNote(noteId, { mode: 'handwriting' })} title="Handwriting">
+              <Pencil size={14} />
             </ModeBtn>
           </div>
           {/* AI toggle */}
@@ -148,7 +163,7 @@ export function NoteEditor({ noteId }: Props) {
 
         {/* Toolbar (doc mode) */}
         {(mode === 'document' || mode === 'split') && editor && (
-          <NoteToolbar editor={editor} saveStatus={saveStatus} />
+          <NoteToolbar editor={editor} saveStatus={saveStatus} isRTL={isRTL} onToggleRTL={handleToggleRTL} />
         )}
 
         {/* Content area */}
@@ -157,7 +172,13 @@ export function NoteEditor({ noteId }: Props) {
           {(mode === 'document' || mode === 'split') && (
             <div className={cn('flex flex-col overflow-y-auto', mode === 'split' ? 'w-1/2 border-r border-[hsl(var(--border))]' : 'flex-1')}>
               {editor && <BubbleMenuBar editor={editor} />}
-              <EditorContent editor={editor} className="flex-1" />
+              {/* File attachments */}
+              <div className="note-page-container">
+                <FileAttachments noteId={noteId} />
+                <div dir={isRTL ? 'rtl' : 'ltr'} className="flex-1">
+                  <EditorContent editor={editor} className="flex-1" />
+                </div>
+              </div>
             </div>
           )}
 
@@ -165,6 +186,13 @@ export function NoteEditor({ noteId }: Props) {
           {(mode === 'canvas' || mode === 'split') && (
             <div className={cn(mode === 'split' ? 'w-1/2' : 'flex-1')}>
               <CanvasEditor noteId={noteId} />
+            </div>
+          )}
+
+          {/* Handwriting */}
+          {mode === 'handwriting' && (
+            <div className="flex-1 min-h-0">
+              <HandwritingCanvas noteId={noteId} />
             </div>
           )}
         </div>

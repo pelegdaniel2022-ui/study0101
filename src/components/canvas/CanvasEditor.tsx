@@ -21,7 +21,9 @@ export function CanvasEditor({ noteId }: Props) {
   }, [noteId, updateNote])
 
   return (
-    <div className="h-full w-full">
+    // touch-action: none prevents browser scroll from interfering with S Pen / stylus drawing.
+    // Excalidraw handles Pointer Events natively, so Samsung S Pen pressure/tilt work automatically.
+    <div className="h-full w-full" style={{ touchAction: 'none' }}>
       <Excalidraw
         initialData={initialData}
         onChange={onChange}

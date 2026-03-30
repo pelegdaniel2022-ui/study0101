@@ -9,9 +9,11 @@ import { cn } from '@/lib/utils'
 interface Props {
   editor: Editor
   saveStatus: 'saved' | 'saving' | 'unsaved'
+  isRTL: boolean
+  onToggleRTL: () => void
 }
 
-export function NoteToolbar({ editor, saveStatus }: Props) {
+export function NoteToolbar({ editor, saveStatus, isRTL, onToggleRTL }: Props) {
   function insertBlockEq() {
     editor.chain().focus().insertContent({ type: 'blockEquation', attrs: { latex: '' } }).run()
   }
@@ -38,6 +40,10 @@ export function NoteToolbar({ editor, saveStatus }: Props) {
       <TB onClick={() => editor.chain().focus().setTextAlign('left').run()} active={editor.isActive({ textAlign: 'left' })} title="Align left"><AlignLeft size={13} /></TB>
       <TB onClick={() => editor.chain().focus().setTextAlign('center').run()} active={editor.isActive({ textAlign: 'center' })} title="Align center"><AlignCenter size={13} /></TB>
       <TB onClick={() => editor.chain().focus().setTextAlign('right').run()} active={editor.isActive({ textAlign: 'right' })} title="Align right"><AlignRight size={13} /></TB>
+      <Sep />
+      <TB onClick={onToggleRTL} active={isRTL} title={isRTL ? 'Switch to LTR' : 'Switch to RTL'}>
+        <span className="text-[10px] font-bold leading-none">{isRTL ? 'LTR' : 'RTL'}</span>
+      </TB>
       <Sep />
       <TB onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive('bulletList')} title="Bullet list"><List size={13} /></TB>
       <TB onClick={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive('orderedList')} title="Ordered list"><ListOrdered size={13} /></TB>
