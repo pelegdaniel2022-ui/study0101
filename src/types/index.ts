@@ -15,6 +15,15 @@ export interface Lecture {
   updatedAt: number
 }
 
+export interface NoteAttachment {
+  id: string
+  name: string
+  type: 'pdf' | 'image' | 'text' | 'other'
+  dataUrl: string // base64 data URL stored locally
+  size: number
+  addedAt: number
+}
+
 export interface Note {
   id: string
   lectureId: string
@@ -22,8 +31,11 @@ export interface Note {
   title: string
   content: string        // Tiptap JSON stringified
   canvasData?: string    // Excalidraw JSON stringified
-  mode: 'document' | 'canvas' | 'split'
+  handwritingData?: string // HandwritingCanvas PNG base64
+  mode: 'document' | 'canvas' | 'split' | 'handwriting'
   tags: string[]
+  isRTL?: boolean
+  attachments?: NoteAttachment[]
   createdAt: number
   updatedAt: number
 }
