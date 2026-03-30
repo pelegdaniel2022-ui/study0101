@@ -20,12 +20,29 @@ export interface Note {
   lectureId: string
   courseId: string
   title: string
-  content: string        // Tiptap JSON document
-  canvasData?: string    // Excalidraw JSON
+  content: string        // Tiptap JSON stringified
+  canvasData?: string    // Excalidraw JSON stringified
   mode: 'document' | 'canvas' | 'split'
   tags: string[]
   createdAt: number
   updatedAt: number
+}
+
+export interface ChatMessage {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+  timestamp: number
+}
+
+export interface FlashCard {
+  front: string
+  back: string
+}
+
+export interface SimConfig {
+  type: 'pendulum' | 'projectile' | 'harmonic' | 'wave'
+  params: Record<string, number>
 }
 
 export type ActiveView =
@@ -34,3 +51,11 @@ export type ActiveView =
   | { type: 'ai-tutor' }
   | { type: 'research' }
   | { type: 'simulations' }
+  | { type: 'settings' }
+  | { type: 'study-coach'; noteId: string }
+
+export interface APIKeys {
+  openai: string
+  perplexity: string
+  anthropic: string
+}

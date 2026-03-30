@@ -3,6 +3,9 @@ import { NoteEditor } from '@/components/notes/NoteEditor'
 import { HomeView } from './HomeView'
 import { AITutorView } from './AITutorView'
 import { SimulationsView } from './SimulationsView'
+import { SettingsPanel } from './SettingsPanel'
+import { ResearchPanel } from '@/components/ai/ResearchPanel'
+import { LibrarianPanel } from '@/components/ai/LibrarianPanel'
 
 export function MainContent() {
   const { activeView } = useAppStore()
@@ -13,6 +16,9 @@ export function MainContent() {
       {activeView.type === 'note' && <NoteEditor noteId={activeView.noteId} />}
       {activeView.type === 'ai-tutor' && <AITutorView />}
       {activeView.type === 'simulations' && <SimulationsView />}
+      {activeView.type === 'settings' && <SettingsPanel />}
+      {activeView.type === 'research' && <ResearchPanel />}
+      {activeView.type === 'study-coach' && <LibrarianPanel />}
     </div>
   )
 }

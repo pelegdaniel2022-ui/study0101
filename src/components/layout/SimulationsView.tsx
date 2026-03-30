@@ -1,19 +1,71 @@
-import { FlaskConical, Sparkles } from 'lucide-react'
+import { useState } from 'react'
+import { PendulumSim } from '@/components/simulation/PendulumSim'
+import { ProjectileSim } from '@/components/simulation/ProjectileSim'
+import { HarmonicSim } from '@/components/simulation/HarmonicSim'
+import { WaveSim } from '@/components/simulation/WaveSim'
+import { FlaskConical } from 'lucide-react'
+import { cn } from '@/lib/utils'
+
+type Tab = 'pendulum' | 'projectile' | 'harmonic' | 'wave'
+
+const TABS: Array<{ key: Tab; label: string; formula: string }> = [
+  { key: 'pendulum', label: 'Pendulum', formula: 'T = 2π√(L/g)' },
+  { key: 'projectile', label: 'Projectile', formula: 'y = v₀t − ½gt²' },
+  { key: 'harmonic', label: 'SHO', formula: 'F = −kx' },
+  { key: 'wave', label: 'Waves', formula: 'v = fλ' },
+]
 
 export function SimulationsView() {
+  const [tab, setTab] = useState<Tab>('pendulum')
+  const [pendulumP, setPendulumP] = useState({ length: 1.0, gravity: 9.81, angle: 20 })
+  const [projectileP, setProjectileP] = useState({ v0: 20, angle: 45, gravity: 9.81, airResistance: 0 })
+  const [harmonicP, setHarmonicP] = useState({ mass: 1.0, springK: 10, amplitude: 0.5, damping: 0.1 })
+  const [waveP, setWaveP] = useState({ frequency: 1, amplitude: 1, speed: 2, sources: 1 })
+
+  function patchParam(setter: React.Dispatch<React.SetStateAction<Record<string, number>>>) {
+    return (k: string, v: number) => setter((p) => ({ ...p, [k]: v }))
+  }
+
   return (
-    <div className="h-full flex flex-col items-center justify-center text-center px-8">
-      <div className="p-4 rounded-2xl bg-[#05966918] mb-4">
-        <FlaskConical size={36} className="text-[#059669]" />
+    <div className="h-full overflow-y-auto px-8 py-6 max-w-2xl mx-auto">
+      <div className="flex items-center gap-2 mb-6">
+        <FlaskConical size={20} className="text-[hsl(var(--primary))]" />
+        <h1 className="text-xl font-bold">Physics Simulations</h1>
       </div>
-      <h2 className="text-xl font-bold mb-2">Physics Simulations</h2>
-      <p className="text-sm text-[hsl(var(--muted-foreground))] max-w-sm mb-6">
-        Interactive physics widgets: pendulum, projectile motion, harmonic oscillator,
-        and more — embeddable directly into your notes.
-      </p>
-      <div className="flex items-center gap-2 text-xs text-[hsl(var(--muted-foreground))] bg-[hsl(var(--muted))] px-4 py-2 rounded-full">
-        <Sparkles size={12} />
-        Coming in Phase 4 — Physics Depth
+
+      {/* Tab bar */}
+      <div className="flex gap-1 mb-6 bg-[hsl(var(--muted))] p-1 rounded-xl">
+        {TABS.map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            className={cn(
+              'flex-1 py-1.5 rounded-lg text-sm transition-all',
+              tab === t.key
+                ? 'bg-[hsl(var(--background))] shadow text-[hsl(var(--foreground))] font-medium'
+                : 'text-[hsl(var(--muted-foreground))]'
+            )}
+          >
+            <div>{t.label}</div>
+            <div className="text-xs opacity-60 font-mono">{t.formula}</div>
+          </button>
+        ))}
+      </div>
+
+      {/* Sim */}
+      <div className="flex justify-center">
+        {tab === 'pendulum' && (
+          <PendulumSim {...pendulumP} onParam={patchParam(setPendulumP as React.Dispatch<React.SetStateAction<Record<string, number>>>)} />
+        )}
+        {tab === 'projectile' && (
+          <ProjectileSim {...projectileP} onParam={patchParam(setProjectileP as React.Dispatch<React.SetStateAction<Record<string, number>>>)} />
+        )}
+        {tab === 'harmonic' && (
+          <HarmonicSim {...harmonicP} onParam={patchParam(setHarmonicP as React.Dispatch<React.SetStateAction<Record<string, number>>>)} />
+        )}
+        {tab === 'wave' && (
+          <WaveSim {...waveP} onParam={patchParam(setWaveP as React.Dispatch<React.SetStateAction<Record<string, number>>>)} />
+        )}
       </div>
     </div>
   )
