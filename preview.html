@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PhysicsStudy — App Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* ── Reset & tokens ─────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #ffffff;
+    --bg2:      #f8f8fa;
+    --bg3:      #f1f0f5;
+    --border:   #e4e3e8;
+    --text:     #1a1825;
+    --text2:    #6b6880;
+    --primary:  #7c3aed;
+    --primary2: #ede9fe;
+    --green:    #059669;
+    --amber:    #d97706;
+    --blue:     #2563eb;
+    --sidebar:  260px;
+    --font:     'Inter', system-ui, sans-serif;
+    --mono:     'JetBrains Mono', monospace;
+  }
+
+  .dark {
+    --bg:       #0f0e17;
+    --bg2:      #181626;
+    --bg3:      #201e2e;
+    --border:   #2a2840;
+    --text:     #e8e6f0;
+    --text2:    #7c7a90;
+    --primary:  #a78bfa;
+    --primary2: #2d1f54;
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    height: 100dvh;
+    display: flex;
+    overflow: hidden;
+    font-size: 14px;
+    transition: background .2s, color .2s;
+  }
+
+  /* ── Sidebar ────────────────────────────────────────────────── */
+  .sidebar {
+    width: var(--sidebar);
+    min-width: var(--sidebar);
+    height: 100%;
+    border-right: 1px solid var(--border);
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 12px;
+    border-bottom: 1px solid var(--border);
+    gap: 8px;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--primary);
+  }
+
+  .logo-icon {
+    width: 24px; height: 24px;
+    background: var(--primary2);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+  }
+
+  .icon-btn {
+    width: 28px; height: 28px;
+    border-radius: 7px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text2);
+    font-size: 15px;
+    transition: background .15s;
+  }
+  .icon-btn:hover { background: var(--bg3); color: var(--text); }
+
+  .nav-section {
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--text);
+    font-size: 13px;
+    transition: background .12s;
+    user-select: none;
+  }
+  .nav-item:hover { background: var(--bg3); }
+  .nav-item.active { background: var(--primary2); color: var(--primary); font-weight: 600; }
+  .nav-item .icon { font-size: 14px; width: 18px; text-align: center; opacity: .75; }
+  .nav-item.active .icon { opacity: 1; }
+
+  .tree-section {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+  }
+
+  .tree-label {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 2px 4px 6px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--text2);
+  }
+
+  .course { margin-bottom: 2px; }
+
+  .course-row {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 6px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background .12s;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .course-row:hover { background: var(--bg3); }
+
+  .course-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+
+  .lecture-list { margin-left: 14px; border-left: 1px solid var(--border); padding-left: 8px; padding-top: 2px; }
+
+  .lecture-row {
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 6px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--text2);
+    transition: background .12s;
+    margin-bottom: 1px;
+  }
+  .lecture-row:hover { background: var(--bg3); color: var(--text); }
+
+  .note-row {
+    display: flex; align-items: center; gap: 5px;
+    padding: 3px 6px 3px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 11px;
+    color: var(--text2);
+    transition: background .12s;
+    margin-bottom: 1px;
+  }
+  .note-row:hover { background: var(--bg3); }
+  .note-row.active { background: var(--primary2); color: var(--primary); }
+
+  .sidebar-footer {
+    padding: 8px;
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center; gap: 4px;
+  }
+
+  /* ── Main content ───────────────────────────────────────────── */
+  .main {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--bg);
+  }
+
+  /* ── Note editor ────────────────────────────────────────────── */
+  .note-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 28px 0;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0;
+  }
+
+  .note-title {
+    flex: 1;
+    font-size: 20px;
+    font-weight: 700;
+    border: none;
+    background: transparent;
+    color: var(--text);
+    outline: none;
+    padding-bottom: 12px;
+  }
+  .note-title::placeholder { color: var(--text2); }
+
+  .mode-switch {
+    display: flex;
+    background: var(--bg3);
+    border-radius: 9px;
+    padding: 3px;
+    gap: 2px;
+  }
+  .mode-btn {
+    padding: 4px 10px;
+    border-radius: 7px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text2);
+    transition: all .15s;
+  }
+  .mode-btn.active { background: var(--bg); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+
+  .toolbar {
+    display: flex; align-items: center; gap: 2px;
+    padding: 6px 16px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    background: var(--bg);
+  }
+
+  .tb-btn {
+    padding: 5px 6px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--text2);
+    font-weight: 600;
+    transition: background .12s;
+    line-height: 1;
+    min-width: 26px;
+    text-align: center;
+  }
+  .tb-btn:hover { background: var(--bg3); color: var(--text); }
+  .tb-btn.active { background: var(--primary2); color: var(--primary); }
+  .tb-sep { width: 1px; height: 16px; background: var(--border); margin: 0 4px; }
+
+  .save-status { margin-left: auto; font-size: 11px; color: var(--green); font-weight: 500; }
+
+  .editor-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 28px;
+  }
+
+  .editor-content { max-width: 720px; }
+
+  .editor-content h1 { font-size: 22px; font-weight: 700; margin-bottom: 8px; color: var(--text); }
+  .editor-content h2 { font-size: 17px; font-weight: 600; margin: 16px 0 8px; color: var(--text); }
+  .editor-content p { line-height: 1.7; color: var(--text); margin-bottom: 10px; }
+
+  .katex-block {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+    margin: 16px 0;
+    font-family: var(--mono);
+    font-size: 18px;
+    color: var(--primary);
+    cursor: pointer;
+    transition: border-color .15s;
+  }
+  .katex-block:hover { border-color: var(--primary); }
+  .katex-block small { display: block; font-size: 10px; color: var(--text2); margin-top: 6px; font-family: var(--font); }
+
+  .sim-widget {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    margin: 16px 0;
+  }
+  .sim-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 12px;
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text2);
+  }
+  .sim-body {
+    padding: 12px;
+    display: flex; gap: 16px; align-items: flex-start;
+  }
+  .sim-canvas {
+    width: 200px; height: 150px;
+    background: var(--bg2);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px;
+  }
+  .sim-controls { flex: 1; }
+  .sim-slider { margin-bottom: 8px; }
+  .sim-slider label { font-size: 10px; color: var(--text2); display: flex; justify-content: space-between; margin-bottom: 3px; }
+  .sim-slider input[type=range] { width: 100%; accent-color: var(--primary); }
+
+  .task-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 4px 0;
+    font-size: 13px;
+  }
+  .task-item input[type=checkbox] { accent-color: var(--primary); width: 14px; height: 14px; }
+  .task-item.done { text-decoration: line-through; color: var(--text2); }
+
+  blockquote {
+    border-left: 3px solid var(--primary);
+    padding-left: 14px;
+    color: var(--text2);
+    margin: 12px 0;
+    font-style: italic;
+  }
+
+  code {
+    background: var(--bg3);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--primary);
+  }
+
+  .tag {
+    display: inline-flex; align-items: center;
+    background: var(--primary2);
+    color: var(--primary);
+    border-radius: 20px;
+    padding: 2px 8px;
+    font-size: 10px;
+    font-weight: 600;
+    gap: 4px;
+  }
+
+  .note-footer {
+    display: flex; align-items: center; gap: 12px;
+    padding: 6px 28px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--text2);
+    flex-wrap: wrap;
+  }
+
+  /* ── AI sidebar ─────────────────────────────────────────────── */
+  .ai-panel {
+    width: 300px;
+    min-width: 300px;
+    height: 100%;
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
+  }
+
+  .ai-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 600;
+    font-size: 13px;
+  }
+
+  .ai-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .msg {
+    max-width: 90%;
+    border-radius: 14px;
+    padding: 8px 12px;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .msg.user {
+    background: var(--primary);
+    color: white;
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+  }
+  .msg.ai {
+    background: var(--bg3);
+    color: var(--text);
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+  }
+  .msg .math { color: var(--primary); font-family: var(--mono); font-size: 11px; }
+
+  .ai-input-row {
+    padding: 10px;
+    border-top: 1px solid var(--border);
+    display: flex; gap: 8px;
+  }
+
+  .ai-input {
+    flex: 1;
+    padding: 8px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--bg3);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 12px;
+    outline: none;
+    resize: none;
+  }
+  .ai-input:focus { border-color: var(--primary); }
+
+  .send-btn {
+    width: 34px; height: 34px;
+    border-radius: 10px;
+    background: var(--primary);
+    border: none;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: white;
+    font-size: 14px;
+    align-self: flex-end;
+    transition: opacity .15s;
+  }
+  .send-btn:hover { opacity: .85; }
+
+  /* ── Badges & chips ─────────────────────────────────────────── */
+  .badge {
+    display: inline-flex;
+    padding: 2px 7px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 600;
+  }
+  .badge-purple { background: var(--primary2); color: var(--primary); }
+  .badge-green { background: #d1fae5; color: #065f46; }
+  .badge-amber { background: #fef3c7; color: #92400e; }
+
+  /* ── Dark mode notice ───────────────────────────────────────── */
+  .top-bar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: rgba(124,58,237,0.95);
+    color: white;
+    text-align: center;
+    padding: 8px 16px;
+    font-size: 12px;
+    font-weight: 500;
+    z-index: 100;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+  }
+
+  .top-bar button {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: white;
+    padding: 3px 10px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .top-bar button:hover { background: rgba(255,255,255,0.3); }
+
+  body { padding-top: 36px; }
+
+  /* ── Scrollbar ──────────────────────────────────────────────── */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  /* ── Responsive ─────────────────────────────────────────────── */
+  @media (max-width: 900px) {
+    .ai-panel { display: none; }
+    :root { --sidebar: 220px; }
+  }
+  @media (max-width: 640px) {
+    .sidebar { display: none; }
+    .note-header { padding: 10px 14px 0; }
+    .editor-body { padding: 14px; }
+  }
+
+  /* ── Sim animation ──────────────────────────────────────────── */
+  @keyframes pendulum {
+    0%   { transform: rotate(-25deg); }
+    50%  { transform: rotate(25deg); }
+    100% { transform: rotate(-25deg); }
+  }
+  .pendulum-arm {
+    transform-origin: top center;
+    animation: pendulum 2s ease-in-out infinite;
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Top bar ──────────────────────────────────────────────────── -->
+<div class="top-bar">
+  📱 PhysicsStudy — App Preview &nbsp;|&nbsp; This is how your app looks
+  <button onclick="document.body.classList.toggle('dark')">🌙 Toggle Dark Mode</button>
+</div>
+
+<!-- ── Sidebar ──────────────────────────────────────────────────── -->
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="logo">
+      <div class="logo-icon">⚛️</div>
+      PhysicsStudy
+    </div>
+    <button class="icon-btn">◀</button>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-item"><span class="icon">🔍</span> Search <span style="margin-left:auto;font-size:10px;background:var(--bg3);padding:1px 5px;border-radius:4px;color:var(--text2)">⌘K</span></div>
+    <div class="nav-item active"><span class="icon">🤖</span> AI Tutor</div>
+    <div class="nav-item"><span class="icon">⚗️</span> Simulations</div>
+    <div class="nav-item"><span class="icon">🔬</span> Research</div>
+    <div class="nav-item"><span class="icon">📚</span> Librarian</div>
+  </div>
+
+  <div class="tree-section">
+    <div class="tree-label">
+      Courses
+      <button class="icon-btn" style="width:20px;height:20px;font-size:12px;">＋</button>
+    </div>
+
+    <!-- Course 1 -->
+    <div class="course">
+      <div class="course-row">
+        <div class="course-dot" style="background:#7c3aed"></div>
+        <span>▾</span>
+        <span style="flex:1">Classical Mechanics</span>
+      </div>
+      <div class="lecture-list">
+        <div class="lecture-row">▾ <span>Lecture 1 — Kinematics</span></div>
+        <div style="margin-left:8px">
+          <div class="note-row active">📄 Newton's Laws</div>
+          <div class="note-row">📄 Projectile Motion</div>
+        </div>
+        <div class="lecture-row">▸ <span>Lecture 2 — Dynamics</span></div>
+        <div class="lecture-row">▸ <span>Lecture 3 — Energy</span></div>
+      </div>
+    </div>
+
+    <!-- Course 2 -->
+    <div class="course" style="margin-top:4px">
+      <div class="course-row">
+        <div class="course-dot" style="background:#2563eb"></div>
+        <span>▾</span>
+        <span style="flex:1">Electromagnetism</span>
+      </div>
+      <div class="lecture-list">
+        <div class="lecture-row">▸ <span>Lecture 1 — Coulomb's Law</span></div>
+        <div class="lecture-row">▸ <span>Lecture 2 — Electric Fields</span></div>
+      </div>
+    </div>
+
+    <!-- Course 3 -->
+    <div class="course" style="margin-top:4px">
+      <div class="course-row">
+        <div class="course-dot" style="background:#059669"></div>
+        <span>▸</span>
+        <span style="flex:1">Thermodynamics</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="nav-item" style="flex:1"><span class="icon">⚙️</span> Settings</div>
+    <button class="icon-btn" onclick="document.body.classList.toggle('dark')" title="Dark mode">🌙</button>
+  </div>
+</aside>
+
+<!-- ── Main content: Note editor ────────────────────────────────── -->
+<main class="main">
+  <!-- Note header -->
+  <div class="note-header">
+    <input class="note-title" value="Newton's Laws of Motion" />
+    <div class="mode-switch">
+      <button class="mode-btn active">📄 Doc</button>
+      <button class="mode-btn">✏️ Canvas</button>
+      <button class="mode-btn">⊞ Split</button>
+    </div>
+    <button class="icon-btn" style="background:var(--primary2);color:var(--primary)">🤖</button>
+    <button class="icon-btn">⛶</button>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <button class="tb-btn" title="Undo">↩</button>
+    <button class="tb-btn" title="Redo">↪</button>
+    <div class="tb-sep"></div>
+    <button class="tb-btn active" title="Bold"><b>B</b></button>
+    <button class="tb-btn" title="Italic"><i>I</i></button>
+    <button class="tb-btn" title="Underline"><u>U</u></button>
+    <button class="tb-btn" title="Strike"><s>S</s></button>
+    <button class="tb-btn" title="Highlight" style="color:#d97706">H</button>
+    <button class="tb-btn" title="Code" style="font-family:monospace">&lt;&gt;</button>
+    <div class="tb-sep"></div>
+    <button class="tb-btn" title="H1"><b>H1</b></button>
+    <button class="tb-btn" title="H2">H2</button>
+    <button class="tb-btn" title="H3">H3</button>
+    <div class="tb-sep"></div>
+    <button class="tb-btn" title="Bullet list">≡</button>
+    <button class="tb-btn" title="Numbered list">1.</button>
+    <button class="tb-btn" title="Task list">☑</button>
+    <button class="tb-btn" title="Quote">❝</button>
+    <div class="tb-sep"></div>
+    <button class="tb-btn" title="Equation" style="color:var(--primary)">∑</button>
+    <button class="tb-btn" title="Simulation" style="color:#059669">⚗️</button>
+    <div class="save-status">✓ Saved</div>
+  </div>
+
+  <!-- Editor body -->
+  <div class="editor-body">
+    <div class="editor-content">
+
+      <h1>Newton's Laws of Motion</h1>
+
+      <p>Newton's three laws form the foundation of classical mechanics. They describe the relationship between a body and the forces acting upon it, and the body's motion in response to those forces.</p>
+
+      <h2>First Law — Inertia</h2>
+      <p>An object remains at rest or in uniform motion unless acted upon by a net external force.</p>
+
+      <blockquote>
+        "Every body persists in its state of rest or of uniform motion in a straight line unless compelled to change that state by forces impressed on it." — Newton, 1687
+      </blockquote>
+
+      <h2>Second Law — F = ma</h2>
+      <p>The net force acting on an object equals the rate of change of its momentum.</p>
+
+      <!-- Block equation -->
+      <div class="katex-block">
+        <b>F</b> = m<b>a</b> &nbsp;&nbsp;⟺&nbsp;&nbsp; ΣF = dp/dt
+        <small>Click to edit equation</small>
+      </div>
+
+      <!-- Task list -->
+      <h2>Study Checklist</h2>
+      <div class="task-item done"><input type="checkbox" checked> Understand Newton's 1st Law</div>
+      <div class="task-item done"><input type="checkbox" checked> Memorize F = ma</div>
+      <div class="task-item"><input type="checkbox"> Derive momentum form</div>
+      <div class="task-item"><input type="checkbox"> Practice problems: Chapter 4</div>
+
+      <br>
+      <p>For a system of particles, the total momentum is <code>p = mv</code> and the impulse-momentum theorem states <code>J = Δp</code>.</p>
+
+      <!-- Tags -->
+      <div style="margin-top:16px;display:flex;gap:6px;flex-wrap:wrap">
+        <span class="tag">mechanics</span>
+        <span class="tag">newton</span>
+        <span class="tag">forces</span>
+        <span class="badge badge-green">Lecture 1</span>
+      </div>
+
+      <!-- Simulation widget -->
+      <div class="sim-widget" style="margin-top:20px">
+        <div class="sim-header">
+          <span>⚗️ Pendulum Simulation</span>
+          <div style="display:flex;gap:4px">
+            <span class="badge badge-purple">T = 2π√(L/g)</span>
+            <button class="icon-btn" style="width:20px;height:20px;font-size:11px">✕</button>
+          </div>
+        </div>
+        <div class="sim-body">
+          <div class="sim-canvas">
+            <svg width="100" height="130" viewBox="0 0 100 130">
+              <!-- Pivot -->
+              <circle cx="50" cy="10" r="4" fill="#64748b"/>
+              <!-- Pendulum arm group (animated) -->
+              <g class="pendulum-arm" style="transform-origin: 50px 10px">
+                <!-- Rod -->
+                <line x1="50" y1="10" x2="50" y2="100" stroke="#94a3b8" stroke-width="2"/>
+                <!-- Bob -->
+                <circle cx="50" cy="105" r="14" fill="#7c3aed"/>
+                <text x="50" y="109" text-anchor="middle" fill="white" font-size="10" font-weight="bold">m</text>
+              </g>
+              <!-- Period text -->
+              <text x="5" y="125" fill="#94a3b8" font-size="8">T = 2.01 s</text>
+            </svg>
+          </div>
+          <div class="sim-controls">
+            <div class="sim-slider">
+              <label><span>Length (m)</span><b>1.0</b></label>
+              <input type="range" min="0.2" max="3" step="0.1" value="1.0">
+            </div>
+            <div class="sim-slider">
+              <label><span>Gravity (m/s²)</span><b>9.81</b></label>
+              <input type="range" min="1" max="25" step="0.1" value="9.81">
+            </div>
+            <div class="sim-slider">
+              <label><span>Angle (°)</span><b>20</b></label>
+              <input type="range" min="5" max="85" step="1" value="20">
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Meta bar -->
+  <div class="note-footer">
+    <span class="tag" style="font-size:9px">mechanics</span>
+    <span class="tag" style="font-size:9px">newton</span>
+    <button style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--text2)">＋ Add tag</button>
+    <span style="margin-left:auto">342 words &nbsp;·&nbsp; 1,843 chars &nbsp;·&nbsp; Updated 09:14</span>
+  </div>
+</main>
+
+<!-- ── AI Sidebar ─────────────────────────────────────────────────── -->
+<aside class="ai-panel">
+  <div class="ai-header">
+    <span style="background:var(--primary2);color:var(--primary);border-radius:7px;padding:4px 6px;font-size:14px">🤖</span>
+    AI Tutor
+    <span style="margin-left:auto;font-size:11px;color:var(--text2)">gpt-4o</span>
+    <button class="icon-btn" style="font-size:13px">🗑</button>
+    <button class="icon-btn">✕</button>
+  </div>
+
+  <div class="ai-messages">
+    <div class="msg ai">
+      Hi! I can see your notes on <strong>Newton's Laws</strong>. What would you like to understand better? I can explain concepts, solve problems step-by-step, or quiz you! 🎯
+    </div>
+
+    <div class="msg user">
+      Can you explain why F = ma and not F = mv?
+    </div>
+
+    <div class="msg ai">
+      Great question! The key insight is that force causes <em>change in motion</em>, not motion itself.<br><br>
+      <span class="math">F = ma = m(dv/dt) = d(mv)/dt</span><br><br>
+      If you push a car at constant velocity, you're not accelerating it — so <strong>net force = 0</strong>, even though <em>v ≠ 0</em>.<br><br>
+      Think of it this way: a = 0 means the forces are balanced, not that there's no motion! 🚗
+    </div>
+
+    <div class="msg user">
+      What's the formula for momentum?
+    </div>
+
+    <div class="msg ai">
+      Momentum is:<br>
+      <span class="math">p = mv &nbsp; (kg·m/s)</span><br><br>
+      And Newton's 2nd Law is actually more accurately written as:<br>
+      <span class="math">F = dp/dt</span><br><br>
+      This form also works for variable mass! (like a rocket 🚀)
+    </div>
+  </div>
+
+  <div class="ai-input-row">
+    <textarea class="ai-input" rows="1" placeholder="Ask a physics question…">What is the third law?</textarea>
+    <button class="send-btn">➤</button>
+  </div>
+</aside>
+
+<script>
+  // Make sliders interactive
+  document.querySelectorAll('.sim-slider input[type=range]').forEach(input => {
+    const label = input.previousElementSibling;
+    const val = label.querySelector('b');
+    input.addEventListener('input', () => { val.textContent = input.value; });
+  });
+
+  // Note title editable
+  document.querySelector('.note-title').addEventListener('input', function() {
+    document.querySelector('.save-status').textContent = '● Unsaved';
+    document.querySelector('.save-status').style.color = '#d97706';
+    setTimeout(() => {
+      document.querySelector('.save-status').textContent = '✓ Saved';
+      document.querySelector('.save-status').style.color = '#059669';
+    }, 1200);
+  });
+
+  // Task checkboxes
+  document.querySelectorAll('.task-item input[type=checkbox]').forEach(cb => {
+    cb.addEventListener('change', function() {
+      this.closest('.task-item').classList.toggle('done', this.checked);
+    });
+  });
+
+  // Toolbar buttons toggle
+  document.querySelectorAll('.tb-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      if (!['↩','↪'].includes(this.textContent.trim())) {
+        this.classList.toggle('active');
+      }
+    });
+  });
+
+  // Mode buttons
+  document.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+    });
+  });
+
+  // Nav items
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', function() {
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      this.classList.add('active');
+    });
+  });
+</script>
+</body>
+</html>
