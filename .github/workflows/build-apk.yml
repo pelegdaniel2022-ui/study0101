@@ -5,16 +5,20 @@ on:
     branches:
       - claude/agent-management-system-J5wTy
   workflow_dispatch:
-    inputs:
-      release_name:
-        description: 'Release name (e.g. v1.0)'
-        required: false
-        default: 'latest'
 
 jobs:
   build:
     name: Build APK
     runs-on: ubuntu-latest
+
+    # ── Fix Bug 1: GITHUB_TOKEN needs write permission to create releases ──
+    permissions:
+      contents: write
+
+    # ── Fix Bug 2: Use pre-installed Android SDK, no 3rd-party action needed ──
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
 
     steps:
       # ── 1. Checkout ──────────────────────────────────────────────────────
@@ -29,20 +33,19 @@ jobs:
           cache: 'npm'
 
       # ── 3. Java (required for Android Gradle) ────────────────────────────
-      - name: Set up Java 17
+      - name: Set up Java 21
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '21'
           distribution: 'temurin'
 
-      # ── 4. Android SDK ───────────────────────────────────────────────────
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
+      # ── 4. Accept Android SDK licenses (Fix Bug 3: use correct path) ─────
       - name: Accept Android SDK licenses
-        run: yes | sdkmanager --licenses || true
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0" || true
 
-      # ── 5. Install dependencies ───────────────────────────────────────────
+      # ── 5. Install npm dependencies ───────────────────────────────────────
       - name: Install npm dependencies
         run: npm ci
 
@@ -66,6 +69,8 @@ jobs:
       - name: Build debug APK
         working-directory: android
         run: ./gradlew assembleDebug --no-daemon
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
 
       # ── 10. Rename APK ────────────────────────────────────────────────────
       - name: Rename APK
