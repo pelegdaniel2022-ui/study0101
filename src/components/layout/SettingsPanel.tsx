@@ -1,12 +1,34 @@
 import { useState } from 'react'
 import { useAIStore } from '@/store/ai'
 import { useAppStore } from '@/store/app'
-import { Eye, EyeOff, Key, Moon, Sun, Smartphone } from 'lucide-react'
+import { Eye, EyeOff, Key, Moon, Sun, Smartphone, Download } from 'lucide-react'
+import { notesToObsidianVault } from '@/lib/tiptapToMarkdown'
 
 export function SettingsPanel() {
   const { apiKeys, setAPIKeys } = useAIStore()
-  const { darkMode, toggleDarkMode } = useAppStore()
+  const { darkMode, toggleDarkMode, notes } = useAppStore()
   const [show, setShow] = useState({ openai: false, perplexity: false, anthropic: false })
+  const [exportStatus, setExportStatus] = useState<'idle' | 'done'>('idle')
+
+  function exportObsidian() {
+    const vault = notesToObsidianVault(notes)
+    // Build a simple zip-like structure: one .md file per note concatenated
+    // For a full vault, we create individual file downloads.
+    // Since we're in a browser (no JSZip), we export all notes as a single
+    // Markdown file with --- separators, or download one-by-one via a JSON bundle.
+    const bundle = vault
+      .map((f) => `<!-- FILE: ${f.filename} -->\n${f.content}`)
+      .join('\n\n---\n\n')
+    const blob = new Blob([bundle], { type: 'text/markdown' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'PhysicsStudy-Obsidian-Export.md'
+    a.click()
+    URL.revokeObjectURL(url)
+    setExportStatus('done')
+    setTimeout(() => setExportStatus('idle'), 3000)
+  }
 
   function input(key: keyof typeof apiKeys) {
     return (
@@ -82,6 +104,29 @@ export function SettingsPanel() {
               className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${darkMode ? 'translate-x-5' : 'translate-x-0.5'}`}
             />
           </button>
+        </div>
+      </section>
+
+      {/* Export */}
+      <section className="mb-8">
+        <div className="flex items-center gap-2 mb-4">
+          <Download size={16} className="text-[hsl(var(--primary))]" />
+          <h2 className="font-semibold">Export</h2>
+        </div>
+        <div className="space-y-3">
+          <div>
+            <p className="text-xs text-[hsl(var(--muted-foreground))] mb-2">
+              Export all {notes.length} note{notes.length !== 1 ? 's' : ''} as Obsidian-compatible Markdown with YAML frontmatter and [[wikilinks]].
+            </p>
+            <button
+              onClick={exportObsidian}
+              disabled={notes.length === 0}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[hsl(var(--primary))] text-white text-sm font-medium disabled:opacity-50 hover:opacity-90 transition-opacity"
+            >
+              <Download size={14} />
+              {exportStatus === 'done' ? 'Downloaded!' : 'Export as Obsidian Vault'}
+            </button>
+          </div>
         </div>
       </section>
 

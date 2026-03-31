@@ -7,6 +7,7 @@ import { SettingsPanel } from './SettingsPanel'
 import { ResearchPanel } from '@/components/ai/ResearchPanel'
 import { LibrarianPanel } from '@/components/ai/LibrarianPanel'
 import { DailyReviewView } from './DailyReviewView'
+import { DailyNotesView } from './DailyNotesView'
 import { KnowledgeGraphView } from './KnowledgeGraphView'
 
 export function MainContent() {
@@ -22,6 +23,7 @@ export function MainContent() {
       {activeView.type === 'research' && <ResearchPanel />}
       {activeView.type === 'study-coach' && <LibrarianPanel />}
       {activeView.type === 'daily-review' && <DailyReviewView />}
+      {activeView.type === 'daily-notes' && <DailyNotesView />}
       {activeView.type === 'knowledge-graph' && <KnowledgeGraphView />}
     </div>
   )

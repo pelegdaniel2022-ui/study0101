@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import OpenAI from 'openai'
 import { useAIStore } from '@/store/ai'
-import { useAppStore } from '@/store/app'
-import { Sparkles, BookOpen, HelpCircle, CreditCard, FileText, X, Loader2, Download } from 'lucide-react'
+import { useAppStore, uid } from '@/store/app'
+import { Sparkles, BookOpen, HelpCircle, CreditCard, FileText, X, Loader2, Download, Save, Check } from 'lucide-react'
 import type { FlashCard } from '@/types'
 import katex from 'katex'
 
@@ -15,13 +15,14 @@ type ToolMode = 'summarize' | 'explain' | 'flashcards' | 'quiz' | 'outline'
 
 export function StudyTools({ noteId, onClose }: Props) {
   const { apiKeys } = useAIStore()
-  const { notes } = useAppStore()
+  const { notes, updateFlashcards } = useAppStore()
   const note = notes.find((n) => n.id === noteId)
   const [mode, setMode] = useState<ToolMode>('summarize')
   const [result, setResult] = useState('')
   const [flashCards, setFlashCards] = useState<FlashCard[]>([])
   const [loading, setLoading] = useState(false)
   const [flipped, setFlipped] = useState<Set<number>>(new Set())
+  const [savedToNote, setSavedToNote] = useState(false)
 
   function extractText(): string {
     if (!note?.content) return ''
@@ -65,8 +66,10 @@ export function StudyTools({ noteId, onClose }: Props) {
       if (mode === 'flashcards') {
         try {
           const json = content.replace(/```json|```/g, '').trim()
-          const cards = JSON.parse(json) as FlashCard[]
+          const raw = JSON.parse(json) as Array<{ front: string; back: string }>
+          const cards: FlashCard[] = raw.map((c) => ({ ...c, id: uid() }))
           setFlashCards(cards)
+          setSavedToNote(false)
         } catch {
           setResult(content)
         }
@@ -78,6 +81,16 @@ export function StudyTools({ noteId, onClose }: Props) {
     } finally {
       setLoading(false)
     }
+  }
+
+  function saveToNote() {
+    if (!flashCards.length) return
+    // Merge with existing cards (by id), then save
+    const existing = note?.flashcards ?? []
+    const existingIds = new Set(existing.map((c) => c.id))
+    const merged = [...existing, ...flashCards.filter((c) => !existingIds.has(c.id))]
+    updateFlashcards(noteId, merged)
+    setSavedToNote(true)
   }
 
   function exportAnki() {
@@ -149,9 +162,17 @@ export function StudyTools({ noteId, onClose }: Props) {
             <div className="space-y-3">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-xs text-[hsl(var(--muted-foreground))]">{flashCards.length} cards — click to flip</span>
-                <button onClick={exportAnki} className="flex items-center gap-1 text-xs px-2 py-1 bg-[hsl(var(--muted))] rounded-lg hover:bg-[hsl(var(--primary)/0.1)] hover:text-[hsl(var(--primary))]">
-                  <Download size={12} /> Export Anki CSV
-                </button>
+                <div className="flex gap-1">
+                  <button
+                    onClick={saveToNote}
+                    className={`flex items-center gap-1 text-xs px-2 py-1 rounded-lg transition-colors ${savedToNote ? 'bg-emerald-100 text-emerald-700' : 'bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary)/0.2)]'}`}
+                  >
+                    {savedToNote ? <><Check size={12} /> Saved to note</> : <><Save size={12} /> Save to note</>}
+                  </button>
+                  <button onClick={exportAnki} className="flex items-center gap-1 text-xs px-2 py-1 bg-[hsl(var(--muted))] rounded-lg hover:bg-[hsl(var(--primary)/0.1)] hover:text-[hsl(var(--primary))]">
+                    <Download size={12} /> Export CSV
+                  </button>
+                </div>
               </div>
               {flashCards.map((card, i) => (
                 <div

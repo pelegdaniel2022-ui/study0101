@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 @import "tippy.js/dist/tippy.css";
 
@@ -27,25 +28,25 @@
   }
 
   .dark {
-    --background: 224 71% 4%;
-    --foreground: 213 31% 91%;
-    --card: 224 71% 4%;
-    --card-foreground: 213 31% 91%;
-    --popover: 224 71% 4%;
-    --popover-foreground: 213 31% 91%;
-    --primary: 263 70% 65%;
+    --background: 240 11% 6%;
+    --foreground: 220 14% 90%;
+    --card: 240 11% 8%;
+    --card-foreground: 220 14% 90%;
+    --popover: 240 11% 8%;
+    --popover-foreground: 220 14% 90%;
+    --primary: 262 80% 62%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 222 47% 11%;
-    --secondary-foreground: 213 31% 91%;
-    --muted: 223 47% 11%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 216 34% 17%;
-    --accent-foreground: 213 31% 91%;
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 213 31% 91%;
-    --border: 216 34% 17%;
-    --input: 216 34% 17%;
-    --ring: 263 70% 65%;
+    --secondary: 240 8% 13%;
+    --secondary-foreground: 220 14% 90%;
+    --muted: 240 8% 12%;
+    --muted-foreground: 220 10% 55%;
+    --accent: 240 8% 15%;
+    --accent-foreground: 220 14% 90%;
+    --destructive: 0 63% 42%;
+    --destructive-foreground: 220 14% 90%;
+    --border: 240 8% 15%;
+    --input: 240 8% 15%;
+    --ring: 262 80% 62%;
   }
 }
 
@@ -58,7 +59,7 @@
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
-    font-family: system-ui, -apple-system, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
     margin: 0;
     padding: 0;
     height: 100dvh;

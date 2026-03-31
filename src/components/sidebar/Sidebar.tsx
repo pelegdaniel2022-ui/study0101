@@ -2,7 +2,7 @@ import { useState } from 'react'
 import {
   BookOpen, ChevronDown, ChevronRight, Plus, Trash2, FlaskConical,
   Bot, Search, GraduationCap, FileText, PanelLeftClose, PanelLeftOpen,
-  Settings, LibraryBig, Microscope, Moon, Sun, Brain, Network,
+  Settings, LibraryBig, Microscope, Moon, Sun, Brain, Network, CalendarDays,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store/app'
@@ -75,6 +75,9 @@ export function Sidebar() {
         <button onClick={() => setActiveView({ type: 'simulations' })} className="p-1.5 rounded-md hover:bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]" title="Simulations">
           <FlaskConical size={16} />
         </button>
+        <button onClick={() => setActiveView({ type: 'daily-notes' })} className="p-1.5 rounded-md hover:bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]" title="Today's Journal">
+          <CalendarDays size={16} />
+        </button>
         <button onClick={() => setActiveView({ type: 'knowledge-graph' })} className="p-1.5 rounded-md hover:bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]" title="Graph">
           <Network size={16} />
         </button>
@@ -110,6 +113,7 @@ export function Sidebar() {
         <NavItem icon={<FlaskConical size={14} />} label="Simulations" active={activeView.type === 'simulations'} onClick={() => setActiveView({ type: 'simulations' })} />
         <NavItem icon={<Microscope size={14} />} label="Research" active={activeView.type === 'research'} onClick={() => setActiveView({ type: 'research' })} />
         <NavItem icon={<LibraryBig size={14} />} label="Librarian" active={activeView.type === 'study-coach'} onClick={() => setActiveView({ type: 'study-coach', noteId: '' })} />
+        <NavItem icon={<CalendarDays size={14} />} label="Today" active={activeView.type === 'daily-notes'} onClick={() => setActiveView({ type: 'daily-notes' })} />
         <NavItem icon={<Brain size={14} />} label="Daily Review" active={activeView.type === 'daily-review'} onClick={() => setActiveView({ type: 'daily-review' })} />
         <NavItem icon={<Network size={14} />} label="Graph" active={activeView.type === 'knowledge-graph'} onClick={() => setActiveView({ type: 'knowledge-graph' })} />
       </div>

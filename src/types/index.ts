@@ -82,6 +82,8 @@ export interface Note {
   cornellCues?:    string      // Cornell layout — left cues column
   cornellSummary?: string      // Cornell layout — bottom summary row
   noteType?:       'fleeting' | 'literature' | 'permanent'
+  flashcards?:     FlashCard[] // AI-generated flashcards stored on note
+  isJournal?:      boolean     // true for daily journal notes
 
   createdAt: number
   updatedAt: number
@@ -97,7 +99,7 @@ export interface ChatMessage {
 }
 
 export interface FlashCard {
-  id?:           string
+  id:            string
   front:         string
   back:          string
   reviewData?:   ReviewData   // per-card SRS tracking
@@ -122,6 +124,7 @@ export type ActiveView =
   | { type: 'study-coach'; noteId: string }
   | { type: 'daily-review' }
   | { type: 'knowledge-graph' }
+  | { type: 'daily-notes' }
 
 // ── API keys ──────────────────────────────────────────────────────────────
 

@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Course, Lecture, Note, NoteAttachment, InkStroke, ReviewData, ActiveView } from '@/types'
+import type { Course, Lecture, Note, NoteAttachment, InkStroke, ReviewData, ActiveView, FlashCard } from '@/types'
 
 interface AppState {
   courses:           Course[]
@@ -53,9 +53,17 @@ interface AppState {
   // PKM — favorites
   toggleFavorite: (noteId: string) => void
 
+  // Flashcards
+  updateFlashcards:           (noteId: string, cards: FlashCard[]) => void
+  updateFlashcardReviewData:  (noteId: string, cardId: string, data: ReviewData) => void
+
+  // Daily journal
+  getOrCreateDailyNote: () => Note
+
   // PKM — derived helpers (non-mutating)
   getLinkedNotes:  (noteId: string) => Note[]
   getDueNotes:     () => Note[]
+  getDueFlashcards: () => Array<{ card: FlashCard; noteId: string; noteTitle: string }>
   getFavorites:    () => Note[]
   searchNotes:     (query: string) => Note[]
 }
@@ -232,6 +240,66 @@ export const useAppStore = create<AppState>()(
         ),
       })),
 
+      // ── Flashcards ────────────────────────────────────────────────────────
+
+      updateFlashcards: (noteId, cards) => set((s) => ({
+        notes: s.notes.map((n) =>
+          n.id === noteId ? { ...n, flashcards: cards, updatedAt: Date.now() } : n
+        ),
+      })),
+
+      updateFlashcardReviewData: (noteId, cardId, data) => set((s) => ({
+        notes: s.notes.map((n) =>
+          n.id === noteId
+            ? {
+                ...n,
+                flashcards: (n.flashcards ?? []).map((c) =>
+                  c.id === cardId ? { ...c, reviewData: data } : c
+                ),
+                updatedAt: Date.now(),
+              }
+            : n
+        ),
+      })),
+
+      // ── Daily journal ─────────────────────────────────────────────────────
+
+      getOrCreateDailyNote: () => {
+        const { courses, lectures, notes, addCourse, addLecture, addNote } = get()
+        const today = new Date()
+        const dateStr = today.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+        const dateKey = today.toISOString().slice(0, 10) // YYYY-MM-DD
+
+        // Find or create "Journal" course
+        let journalCourse = courses.find((c) => c.name === 'Journal')
+        if (!journalCourse) {
+          journalCourse = addCourse({ name: 'Journal', color: '#0891b2' })
+        }
+
+        // Find or create "Daily Notes" lecture
+        let journalLecture = lectures.find((l) => l.courseId === journalCourse!.id && l.title === 'Daily Notes')
+        if (!journalLecture) {
+          journalLecture = addLecture({ courseId: journalCourse.id, title: 'Daily Notes', date: Date.now() })
+        }
+
+        // Find or create today's note
+        const existing = notes.find((n) => n.lectureId === journalLecture!.id && n.title === dateStr)
+        if (existing) return existing
+
+        return addNote({
+          lectureId: journalLecture.id,
+          courseId: journalCourse.id,
+          title: dateStr,
+          content: JSON.stringify({
+            type: 'doc',
+            content: [{ type: 'heading', attrs: { level: 1 }, content: [{ type: 'text', text: dateStr }] }, { type: 'paragraph' }],
+          }),
+          mode: 'document',
+          tags: ['journal', dateKey],
+          isJournal: true,
+        })
+      },
+
       // ── Derived helpers ───────────────────────────────────────────────────
 
       getLinkedNotes: (noteId) => {
@@ -245,6 +313,21 @@ export const useAppStore = create<AppState>()(
         const { notes } = get()
         const now = Date.now()
         return notes.filter((n) => n.reviewData && n.reviewData.nextReview <= now)
+      },
+
+      getDueFlashcards: () => {
+        const { notes } = get()
+        const now = Date.now()
+        const result: Array<{ card: FlashCard; noteId: string; noteTitle: string }> = []
+        for (const note of notes) {
+          if (!note.flashcards?.length) continue
+          for (const card of note.flashcards) {
+            if (!card.reviewData || card.reviewData.nextReview <= now) {
+              result.push({ card, noteId: note.id, noteTitle: note.title })
+            }
+          }
+        }
+        return result
       },
 
       getFavorites: () => get().notes.filter((n) => n.isFavorite),
