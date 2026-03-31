@@ -56,8 +56,20 @@ const COMMANDS: Command[] = [
     command: (e) => e.chain().focus().insertContent({ type: 'blockEquation', attrs: { latex: '' } }).run(),
   },
   {
-    title: 'Simulation', description: 'Physics simulation widget', icon: <FlaskConical size={16} />,
+    title: 'Simulation', description: 'Pendulum simulation', icon: <FlaskConical size={16} />,
     command: (e) => e.chain().focus().insertContent({ type: 'simWidget', attrs: { simType: 'pendulum' } }).run(),
+  },
+  {
+    title: 'Sim: Circular Motion', description: 'Centripetal force simulation', icon: <FlaskConical size={16} />,
+    command: (e) => e.chain().focus().insertContent({ type: 'simWidget', attrs: { simType: 'circular' } }).run(),
+  },
+  {
+    title: 'Sim: Energy', description: 'KE/PE conservation simulation', icon: <FlaskConical size={16} />,
+    command: (e) => e.chain().focus().insertContent({ type: 'simWidget', attrs: { simType: 'energy' } }).run(),
+  },
+  {
+    title: 'Sim: Collision', description: '1D elastic/inelastic collision', icon: <FlaskConical size={16} />,
+    command: (e) => e.chain().focus().insertContent({ type: 'simWidget', attrs: { simType: 'collision' } }).run(),
   },
   {
     title: 'Cornell Layout', description: 'Switch to Cornell note-taking layout', icon: <LayoutTemplate size={16} />,
