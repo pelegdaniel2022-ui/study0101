@@ -1,236 +1,276 @@
 # FULL PROJECT HANDOFF — PhysicsStudy App
-**For the successor agent. Read every word of this before touching any code.**
+**Date:** 2026-03-31 | **Branch:** `claude/agent-management-system-J5wTy`
 
 ---
 
 ## Who You Are / What You're Doing
 
-You are the successor to a long-running Claude Code session that built a physics study app from scratch. The user is a physics university student using a **Samsung Galaxy Tab S10 with an S Pen**. He wants a single app that replaces Samsung Notes + Google Docs + AI chat + physics simulations + knowledge management — all working **100% offline, no hosting, no server**.
+You are the successor to a long-running Claude Code session that built a physics study app. Your job is to **complete and ship the full app** — no partial features, no placeholders, no "coming soon."
 
-The user speaks casually, mixes Hebrew and English, and is not a developer. He trusts you to make the right technical calls without asking for permission on every file. He does want to **approve designs before you implement them visually**.
+The user is a **physics university student** using a **Samsung Galaxy Tab S10 with an S Pen**. He is not a developer. He wants one app that replaces:
+- Samsung Notes (handwriting + typed notes)
+- Google Docs (rich text, Word-like editing)
+- AI chat (physics tutor, AI-powered tools)
+- Physics simulations
+- Personal knowledge management (Obsidian-style)
 
----
+**Everything works 100% offline. No hosting. No server. Android APK only.**
 
-## The App — What It Is
-
-**PhysicsStudy** — A unified study workspace (PKM + Notes + AI), like OneNote but with AI + physics focus.
-
-- **Platform:** Android APK, installed directly on Samsung Galaxy Tab S10
-- **Distribution:** GitHub Actions builds the APK → GitHub Releases → user downloads on tablet
-- **Stack:** React + TypeScript + Vite + Capacitor + Tiptap v3 + Zustand + Tailwind CSS v4
-- **Repo branch:** `claude/agent-management-system-J5wTy`
-- **App ID:** `com.study0101.physics`
+The user communicates casually and trusts you to make technical calls without asking permission on every file. Code everything, commit, push — don't wait for approval on implementation details.
 
 ---
 
-## Architecture — Read This First
+## Distribution Model
 
-### Data Layer
-- **Zustand + persist** → `localStorage` (100% offline, no backend ever)
-- Store: `src/store/app.ts` — all CRUD + PKM actions
-- Types: `src/types/index.ts` — always update types first, then store, then UI
-- **Never use `localStorage` directly** — always use `useAppStore()`
+1. Code lives on GitHub branch `claude/agent-management-system-J5wTy`
+2. GitHub Actions (`.github/workflows/build-apk.yml`) builds the APK on every push
+3. APK lands in GitHub Releases as `PhysicsStudy.apk`
+4. User downloads directly to his Samsung Tab S10 and installs
 
-### Notes Editor
-- **Tiptap v3** (not v2 — API differs significantly)
-- Custom inline nodes: `EquationNode`, `SimWidget`, `WikiLink` — all use `ReactNodeViewRenderer`
-- Node view components MUST use `(props: ReactNodeViewProps)` signature
-- Slash commands (`/`): `SlashMenu.tsx` uses Tiptap `Suggestion` extension
-- WikiLink (`[[`): `WikiLink.ts` uses same `Suggestion` pattern
-- BubbleMenu: NOT from `@tiptap/react` (not exported in v3) — custom `createPortal` in `BubbleMenu.tsx`
+---
 
-### Handwriting Canvas
-- **Stroke-based model** — stores `InkStroke[]` with normalised (0–1) coords
-- NOT PNG — the old `handwritingData: string` field is deprecated
-- Uses `updateStrokes(noteId, strokes)` from store
-- `ResizeObserver` for canvas sizing (never set width/height at mount — container is 0px then)
-- Always scale by `window.devicePixelRatio` — Tab S10 has 2× DPR
-- `getCoalescedEvents()` for smooth S Pen input in `onPointerMove`
-- Pen-only mode: rejects touch when `e.pointerType === 'touch'` and pen is active
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | React + TypeScript + Vite |
+| Mobile | Capacitor → Android APK (`com.study0101.physics`) |
+| Editor | Tiptap v3 (NOT v2 — API is different) |
+| State | Zustand + persist → localStorage (offline) |
+| Styling | Tailwind CSS v4 (`@tailwindcss/vite` plugin, NOT PostCSS) |
+| AI | OpenAI API (user provides key) — gpt-4o + text-embedding-3-small |
+| Equations | KaTeX |
+| Canvas | Excalidraw + custom stroke-based HandwritingCanvas |
+| Knowledge graph | react-force-graph |
+| Simulations | Canvas API (pendulum, projectile, harmonic, wave) |
+| Search/RAG | IndexedDB via `idb`, cosine similarity |
+
+---
+
+## Architecture Rules — Read Before Touching Code
+
+### Data / State
+- All data in Zustand with `persist` → localStorage. **Never `localStorage` directly.**
+- Store: `src/store/app.ts` | Types: `src/types/index.ts`
+- **Always update types → store → UI in that order**
+- `uid()` comes from `src/store/app.ts` — never use `crypto.randomUUID()`
+
+### Tiptap v3 Gotchas
+- `BubbleMenu` is NOT exported from `@tiptap/react` in v3 → use custom `createPortal` impl in `BubbleMenu.tsx`
+- Custom nodes: `(props: ReactNodeViewProps)` signature required, NOT typed component props
+- Slash commands use `Suggestion` extension (`SlashMenu.tsx`)
+- WikiLink `[[` uses same `Suggestion` pattern (`WikiLink.ts`)
+
+### Canvas / Handwriting
+- **Stroke model** — `InkStroke[]` with normalised (0–1) coords. NOT PNG blobs.
+- Use `updateStrokes(noteId, strokes)` from store. Deprecated: `handwritingData: string`
+- Canvas sizing: use `ResizeObserver` — container is 0px at mount, never initialise in `useEffect` with empty deps
+- Always `ctx.scale(devicePixelRatio, devicePixelRatio)` — Tab S10 has 2× DPR
+- `getCoalescedEvents()` in `onPointerMove` for smooth S Pen strokes
 
 ### Styling
-- Tailwind CSS v4 with `@tailwindcss/vite` plugin (NOT PostCSS plugin)
-- CSS custom properties (HSL): `hsl(var(--background))`, `hsl(var(--primary))` etc.
-- Dark mode: `.dark` class on `document.documentElement` — toggled in `App.tsx`
-- Do NOT use arbitrary Tailwind values when a CSS var exists
+- CSS vars wrapped: `hsl(var(--primary))` not `var(--primary)`
+- Dark mode: `.dark` class on `document.documentElement`
+- Do NOT add PostCSS config — Tailwind v4 uses Vite plugin only
 
-### Android / Capacitor / CI
-- `capacitor.config.ts` — app ID `com.study0101.physics`, webDir `dist`
-- `.github/workflows/build-apk.yml` — GitHub Actions build
-- **Java 21** required (not 17) — `sourceCompatibility = JavaVersion.VERSION_21`
-- Pre-installed Android SDK at `/usr/local/lib/android/sdk` on `ubuntu-latest`
-- APK output → GitHub Releases as `PhysicsStudy.apk`
-
----
-
-## Full Feature Map — Current State
-
-| Feature | Data model | UI built | Location |
-|---|---|---|---|
-| Rich text notes (Tiptap) | ✅ | ✅ | `NoteEditor.tsx` |
-| RTL / LTR toggle | ✅ `isRTL` | ✅ toolbar button | `NoteToolbar.tsx` |
-| Word-like page layout | — | ✅ centered 740px card | `index.css` `.note-page-container` |
-| Equations (KaTeX) | ✅ | ✅ inline + block | `EquationNode.tsx` |
-| Physics simulations (4 types) | ✅ | ✅ embedded in notes | `SimWidget.tsx`, `*Sim.tsx` |
-| Slash commands | — | ✅ | `SlashMenu.tsx` |
-| Excalidraw canvas | ✅ `canvasData` | ✅ | `CanvasEditor.tsx` |
-| Handwriting (S Pen) | ✅ `InkStroke[]` | ✅ stroke-based | `HandwritingCanvas.tsx` |
-| File attachments | ✅ `NoteAttachment[]` | ✅ base64 local | `FileAttachments.tsx` |
-| AI tutor (OpenAI) | ✅ | ✅ RAG + chat | `AISidebar.tsx` |
-| Flashcard generation | ✅ `FlashCard` | ✅ | `StudyTools.tsx` |
-| SM-2 spaced repetition | ✅ `ReviewData` | ✅ review session | `DailyReviewView.tsx`, `sm2.ts` |
-| [[WikiLink]] autocomplete | ✅ `linkedNoteIds` | ✅ Tiptap extension | `WikiLink.ts` |
-| Backlinks panel | ✅ | ✅ | `NoteMetaBar.tsx` |
-| Knowledge Graph | ✅ | ✅ force-directed | `KnowledgeGraphView.tsx` |
-| Cornell Notes | ✅ `template:'cornell'` | ✅ 3-region layout | `NoteEditor.tsx` |
-| Note types (Fleeting/Lit/Perm) | ✅ `noteType` | ✅ pills | `NoteMetaBar.tsx` |
-| Favorites | ✅ `isFavorite` | ✅ toggle | `NoteMetaBar.tsx` |
-| Full-text search | ✅ `searchNotes()` | ✅ Cmd+K | `SearchModal.tsx` |
-| Research panel (Perplexity) | ✅ | ✅ | `ResearchPanel.tsx` |
-| OCR scan (OpenAI Vision) | ✅ | ✅ | `ScanUpload.tsx` |
-| Course→Lecture→Note tree | ✅ | ✅ | `Sidebar.tsx` |
-| Dark mode | ✅ | ✅ | `App.tsx` |
-| Daily Notes (journal) | ⏳ not built | ⏳ not built | — |
-| Obsidian export | ⏳ not built | ⏳ not built | `tiptapToMarkdown.ts` to create |
-| Visual redesign (Sofia's spec) | — | ⏳ PENDING APPROVAL | see below |
-
----
-
-## The Design Situation — IMPORTANT
-
-A senior designer named "Sofia" reviewed the app and produced a full design specification. **The user has NOT yet approved or seen this design as a mockup.** He asked for an interactive HTML preview file to look at before any design changes are made to the real app.
-
-**The design preview file (`design-preview.html`) in the repo is currently EMPTY (1 line).**
-
-The previous agent started it and never finished. This is the first thing to do.
-
-### Sofia's Design Spec (summarised)
-
-**Color palette — Dark theme ("Midnight Studio"):**
-- Background: `#0d0d14`
-- Surface (sidebar/panels): `#1a1a24`
-- Surface hover: `#242430`
-- Border: `#32323f`
-- Border strong: `#4a4a5f`
-- Text primary: `#f0f0f5`
-- Text secondary: `#9898a8`
-- Text tertiary: `#6a6a7e`
-- Primary (accent): `#6d28d9`
-- Primary light: `#8b5cf6`
-- Success: `#10b981`
-- Warning: `#f59e0b`
-- Danger: `#ef4444`
-
-**Color palette — Light theme:**
-- Background: `#fafafa`
-- Surface: `#ffffff`
-- Border: `#e5e5e7`
-- Text primary: `#1a1a1a`
-- Primary: `#6d28d9`
-
-**Typography:**
-- Font: `Inter` (already loaded), fallback `-apple-system, BlinkMacSystemFont`
-- Mono: `JetBrains Mono`
-- Body: 13–15px / weight 400 / line-height 1.65
-- Headings: 22–28px / weight 700
-- Labels: 11–13px / weight 500–600
-
-**Direction:** Modern + mature (Notion + Linear + Arc Browser). NOT childish. Professional workspace.
-
-**Key layout changes:**
-- Sidebar: 280px, generous padding, section labels, breathing room
-- Toolbar: grouped semantically (History | Format | Blocks | Special)
-- Editor content: max-width 740px, centered, generous padding
-- Buttons: 32×32px, 16px icons
-- All touch targets ≥ 44×44px for Tab S10
-
----
-
-## How to Write the Design Preview HTML
-
-**Write it directly using the `Write` tool in one call. Do NOT delegate to a sub-agent — they time out on large HTML files.**
-
-The file should be: `/home/user/study0101/design-preview.html`
-
-It must show 3 interactive "screens" switchable via tabs:
-1. **Main workspace** — sidebar (left, 280px) + note editor (center, Word-like) + collapsed AI icon (right)
-2. **Note + AI panel open** — same layout but AI sidebar (360px) slides in from right
-3. **Knowledge Graph** — force-graph placeholder (circles connected by lines, fake data)
-
-Each screen must look realistic — not wireframe, not sketch. Use the exact hex colors above. Use Inter from Google Fonts. Show real sample content (a physics note about Newton's Laws, with a heading, some equations in LaTeX-style, a bullet list). Include a dark/light mode toggle button in the top right.
-
-The sidebar should show:
-- App name "PhysicsStudy ⚛" in the header
-- Nav items: Home, AI Tutor, Simulations, Research, Graph, Daily Review
-- A course tree: "Classical Mechanics" with lectures and notes under it
-- Bottom: Settings gear + dark mode toggle
-
-The note editor should show:
-- A large note title "Newton's Laws of Motion"
-- A toolbar with grouped buttons
-- The actual note content with headings, body text, a blockquote
-- A meta bar at the bottom (tags, word count, backlinks)
-
----
-
-## Things That Were Tried and FAILED
-
-1. `android-actions/setup-android@v3` → unreliable, removed. Use pre-installed SDK.
-2. Java 17 in GitHub Actions → `invalid source release: 21`. Must use Java 21.
-3. `BubbleMenu` from `@tiptap/react` → not exported in v3. Custom `createPortal`.
-4. PNG-based handwriting → breaks on DPR mismatch on Tab S10. Use stroke model.
-5. Canvas `width/height` set at mount → container is 0px at that point. Use `ResizeObserver`.
-6. Design preview HTML via sub-agent → they time out. Use `Write` tool directly.
-
----
-
-## Priorities for This Session
-
-1. **Write `design-preview.html`** — user needs to approve it before visual redesign
-2. **Show it to user and wait for approval**
-3. **If approved: implement the visual redesign** in `src/index.css` (CSS custom properties)
-4. **Daily Notes** — "Today" view that auto-creates a dated journal note
-5. **Wire SM-2 to flashcard generation** — persist cards with `reviewData` in `StudyTools.tsx`
-6. **Obsidian markdown export** — `src/lib/tiptapToMarkdown.ts` + Settings export button
-
----
-
-## Local AI Question (User Asked)
-
-The user asked if he can avoid paying for OpenAI/Perplexity API. Options researched:
-
-- **WebLLM** (`@mlc-ai/web-llm`) — runs Phi-3 Mini / Gemma 2B in the browser via WebGPU. The Tab S10's Snapdragon 8 Gen 3 supports WebGPU. Model download is ~2–4GB (needs WiFi once). This is the best path forward for offline AI.
-- For web search (replacing Perplexity): no good free option — DuckDuckGo has a free API but it's limited.
-- **Decision:** Keep OpenAI API for now, add WebLLM as an "offline mode" option in Settings.
-
----
-
-## Conventions
-
-- File naming: `PascalCase.tsx` for components, `camelCase.ts` for libs/stores
-- Store actions: named as verbs (`addNote`, `updateNote`, `linkNotes`, `toggleFavorite`)
-- `uid()` from `src/store/app.ts` — never use `crypto.randomUUID()` (compat)
-- CSS variables always wrapped: `hsl(var(--border))` not `var(--border)`
-- Build check: `npm run build` — must pass 0 TypeScript errors (chunk warnings are fine)
-- **Agents do not commit** — the main session commits after verifying build
-
----
-
-## Build / Run
-
+### Build check
 ```bash
-npm ci          # install deps
-npm run build   # TypeScript + Vite build — must pass 0 errors
-npm run dev     # dev server at localhost:5173
+npm run build   # must pass 0 TypeScript errors (chunk warnings are fine)
 ```
 
 ---
 
-## First Thing to Do
+## What Is Already Built
 
-1. Read `src/types/index.ts` and `src/store/app.ts` to understand the data model
-2. Read `src/components/notes/NoteEditor.tsx` to understand the editor
-3. Read `src/components/sidebar/Sidebar.tsx` to understand navigation
-4. **Then write `design-preview.html` directly** using the `Write` tool — single call, complete file
-5. Tell the user "the design preview is ready" and explain what screens it shows
-6. Wait for his feedback / approval before touching any production CSS
+| Feature | Status | Key Files |
+|---|---|---|
+| Tiptap rich text editor | ✅ | `NoteEditor.tsx`, `NoteToolbar.tsx` |
+| RTL/LTR toggle (per-note) | ✅ | `NoteToolbar.tsx` |
+| Word-like page layout | ✅ | `index.css` `.note-page-container` |
+| KaTeX equations (inline + block) | ✅ | `EquationNode.tsx` |
+| 4 physics simulations | ✅ | `PendulumSim`, `ProjectileSim`, `HarmonicSim`, `WaveSim` |
+| Slash commands (/) | ✅ | `SlashMenu.tsx` |
+| Excalidraw canvas mode | ✅ | `CanvasEditor.tsx` |
+| Handwriting (S Pen, stroke-based) | ✅ | `HandwritingCanvas.tsx` |
+| File attachments (PDF/image/text) | ✅ | `FileAttachments.tsx` |
+| AI tutor + RAG | ✅ | `AISidebar.tsx`, `src/lib/rag.ts` |
+| Flashcard generation | ✅ | `StudyTools.tsx` |
+| SM-2 algorithm | ✅ | `src/lib/sm2.ts` |
+| Daily review session | ✅ | `DailyReviewView.tsx` |
+| [[WikiLink]] in editor | ✅ | `WikiLink.ts` |
+| Backlinks panel | ✅ | `NoteMetaBar.tsx` |
+| Knowledge Graph | ✅ | `KnowledgeGraphView.tsx` |
+| Cornell Notes layout | ✅ | `NoteEditor.tsx` (conditional) |
+| Note types (Fleeting/Lit/Perm) | ✅ | `NoteMetaBar.tsx` |
+| Course → Lecture → Note tree | ✅ | `Sidebar.tsx` |
+| Full-text search (Cmd+K) | ✅ | `SearchModal.tsx` |
+| Research panel (Perplexity) | ✅ | `ResearchPanel.tsx` |
+| OCR scan (OpenAI Vision) | ✅ | `ScanUpload.tsx` |
+| Dark/light mode | ✅ | `App.tsx` |
+| APK build (GitHub Actions) | ✅ fixed | `.github/workflows/build-apk.yml` (Java 21) |
+
+---
+
+## What Is NOT Built Yet — Your Tasks
+
+### 🔴 Critical (build these first)
+
+**1. Visual redesign — apply Sofia's design system**
+
+The app looks functional but generic. Apply this design to `src/index.css` and components:
+
+Colors (update CSS custom properties):
+```css
+/* Dark theme */
+--background: 240 15% 5%;        /* #0d0d14 */
+--surface: 240 14% 9%;           /* #1a1a24 */
+--surface-hover: 240 13% 13%;    /* #242430 */
+--border: 240 12% 19%;           /* #32323f */
+--foreground: 240 10% 95%;       /* #f0f0f5 */
+--muted-foreground: 240 6% 60%;  /* #9898a8 */
+--primary: 263 69% 50%;          /* #6d28d9 */
+--primary-foreground: 0 0% 100%;
+
+/* Light theme */
+--background: 0 0% 98%;          /* #fafafa */
+--foreground: 0 0% 10%;          /* #1a1a1a */
+--surface: 0 0% 100%;            /* #ffffff */
+--border: 240 6% 90%;            /* #e5e5e7 */
+--primary: 263 69% 50%;          /* #6d28d9 */
+```
+
+Typography:
+- Load Inter from Google Fonts (already in `preview.html`, move to `index.html`)
+- Body: 14px / weight 400 / line-height 1.65
+- UI text (sidebar, toolbar): 13px / weight 500
+- Note title: 28px / weight 700
+- Headings H1: 28px, H2: 22px, H3: 18px — apply to ProseMirror styles in `index.css`
+
+Sidebar redesign:
+- Width: 280px
+- Nav items: 40px height, 18px icons, 14px padding horizontal
+- Section labels: 11px / weight 600 / uppercase / letter-spacing 0.5px
+- Active item: `hsl(var(--primary))` text, subtle background tint
+- Course tree: breathing room between items
+
+Toolbar redesign:
+- Button size: 32×32px (from ~26px)
+- Icon size: 16px
+- Group buttons semantically: [Undo/Redo] | [Bold/Italic/Underline] | [Headings/Align] | [Lists] | [Special]
+
+**2. Daily Notes (Journal)**
+
+Create `src/components/layout/DailyNoteView.tsx`:
+- On mount: find or create a note titled `new Date().toLocaleDateString('en-CA')` (e.g. `2026-03-31`) in a special "Journal" course (auto-create if needed)
+- Renders `<NoteEditor>` for that note
+- Add "Today" nav item to `Sidebar.tsx` with a calendar icon
+- Wire `activeView: { type: 'daily-note' }` in `ActiveView` union in `types/index.ts` and `MainContent.tsx`
+
+**3. Persist SM-2 flashcards**
+
+In `StudyTools.tsx`, when flashcards are generated via AI:
+- Store them on the note: `updateNote(noteId, { flashcards: cards.map(c => ({ ...c, id: uid(), reviewData: defaultReviewData() })) })`
+- Add `flashcards?: FlashCard[]` to `Note` type in `types/index.ts`
+- In `DailyReviewView.tsx`: also pull due flashcards from all notes and review them card by card (not just whole notes)
+
+**4. Obsidian Markdown Export**
+
+Create `src/lib/tiptapToMarkdown.ts`:
+- Convert Tiptap JSON to Markdown: headings `#`, bold `**`, italic `_`, lists `-`, code blocks ` ``` `
+- WikiLinks as `[[Note Title]]`
+- Equations as `$latex$` (inline) and `$$latex$$` (block)
+- Export a single note or all notes as `.zip`
+
+In `SettingsPanel.tsx`, add an "Export all notes (Markdown)" button that:
+- Calls `tiptapToMarkdown` for each note
+- Downloads a `.zip` file using JSZip (install it: `npm install jszip`)
+- Zip structure: `CourseName/LectureName/NoteTitle.md`
+
+### 🟡 Important (build after critical items)
+
+**5. Local AI — WebLLM (no API cost)**
+
+The user specifically asked: "can we have all the AI in the app without API use?"
+
+Install: `npm install @mlc-ai/web-llm`
+
+In `SettingsPanel.tsx`:
+- Add "AI Mode" toggle: "Cloud (OpenAI)" vs "Local (on-device)"
+- When Local selected: show model picker (Phi-3 Mini 3.8B, Gemma 2B) and a "Download model" button
+- Show download progress (WebLLM streams progress)
+- Store selection in `src/store/ai.ts`
+
+In `AISidebar.tsx`:
+- Check `aiMode` from store
+- If local: use `@mlc-ai/web-llm` `CreateMLCEngine` instead of `openai` fetch
+- The Tab S10 Snapdragon 8 Gen 3 supports WebGPU — this will run at ~10-20 tokens/sec
+
+**6. More Physics Simulations**
+
+Prof. Chen (reviewer) noted the app covers ~20% of intro physics. Add:
+- **Circular motion** — ball on string, centripetal force visualization
+- **Energy conservation** — potential vs kinetic energy bar chart, rollercoaster track
+- **Collision simulation** — 1D elastic/inelastic, momentum conservation
+
+Wire each to the slash menu as `/sim-circular`, `/sim-energy`, `/sim-collision`.
+
+**7. Spaced Repetition Improvements**
+
+- In `DailyReviewView.tsx`: add a "Study Streak" counter (days reviewed consecutively), persist in store
+- In `Sidebar.tsx`: show badge count of notes due today next to "Daily Review" nav item
+- In `NoteMetaBar.tsx`: show next review date for the current note
+
+**8. Note Templates**
+
+Add to slash menu:
+- `/outline` — creates H1, H2, H2, H2 scaffold
+- `/problem-set` — creates "Problem | Given | Find | Solution" sections
+- `/lab-report` — creates "Hypothesis | Method | Results | Analysis | Conclusion"
+
+**9. Quick Capture**
+
+A floating "+" button always visible in bottom-right corner of the screen (not just in sidebar). Tapping it creates a new Fleeting note in the currently selected course (or a default "Inbox" course) and immediately opens it. Key for capturing ideas mid-lecture.
+
+**10. Tag Management UI**
+
+Tags exist in the data but have no dedicated UI. Add:
+- A "Tags" section in the sidebar listing all unique tags with note counts
+- Clicking a tag filters the note list to show only tagged notes
+- In `NoteMetaBar.tsx`: clicking the `+` next to tags shows an autocomplete input
+
+---
+
+## Things That Failed — Do Not Repeat
+
+1. `android-actions/setup-android@v3` → removed; use pre-installed SDK at `/usr/local/lib/android/sdk`
+2. Java 17 in GitHub Actions → `invalid source release: 21`; must use Java 21
+3. `BubbleMenu` from `@tiptap/react` → not exported in v3
+4. PNG-based handwriting → fragile on DPR mismatch; use stroke model
+5. Canvas sizing at mount → container is 0px; use `ResizeObserver`
+6. Writing large HTML files via sub-agent → they time out; use `Write` tool directly
+7. `crypto.randomUUID()` → use `uid()` from `src/store/app.ts` for compat
+
+---
+
+## Agent Workflow
+
+1. Read `src/types/index.ts` and `src/store/app.ts` to fully understand the data model
+2. Read `src/components/notes/NoteEditor.tsx` and `src/components/sidebar/Sidebar.tsx`
+3. Work through the task list above in priority order
+4. After each major feature: `npm run build` — must pass 0 TypeScript errors
+5. When done with a set of features: commit with a descriptive message and push
+6. Use sub-agents for parallelisable work (e.g. run simulation + export + WebLLM simultaneously)
+7. **Do not ask for permission on implementation details** — code it, build it, push it
+
+---
+
+## Commit Convention
+
+```bash
+git commit -m "feat: <what you built>
+
+<brief description of changes>
+
+https://claude.ai/code/session_014bNay3HAURWfyVGUhCk6S9"
+git push -u origin claude/agent-management-system-J5wTy
+```
