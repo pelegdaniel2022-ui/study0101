@@ -2,9 +2,10 @@ import { Extension } from '@tiptap/core'
 import { ReactRenderer } from '@tiptap/react'
 import Suggestion from '@tiptap/suggestion'
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
-import { Heading1, Heading2, Heading3, List, ListOrdered, Code2, Quote, Minus, FlaskConical, FunctionSquare, CheckSquare } from 'lucide-react'
+import { Heading1, Heading2, Heading3, List, ListOrdered, Code2, Quote, Minus, FlaskConical, FunctionSquare, CheckSquare, LayoutTemplate } from 'lucide-react'
 import tippy, { type Instance } from 'tippy.js'
 import type { Editor } from '@tiptap/core'
+import { useAppStore } from '@/store/app'
 
 interface Command {
   title: string
@@ -57,6 +58,15 @@ const COMMANDS: Command[] = [
   {
     title: 'Simulation', description: 'Physics simulation widget', icon: <FlaskConical size={16} />,
     command: (e) => e.chain().focus().insertContent({ type: 'simWidget', attrs: { simType: 'pendulum' } }).run(),
+  },
+  {
+    title: 'Cornell Layout', description: 'Switch to Cornell note-taking layout', icon: <LayoutTemplate size={16} />,
+    command: (_e) => {
+      const { activeView, updateNote } = useAppStore.getState()
+      if (activeView.type === 'note') {
+        updateNote(activeView.noteId, { template: 'cornell' })
+      }
+    },
   },
 ]
 

@@ -6,6 +6,8 @@ import { SimulationsView } from './SimulationsView'
 import { SettingsPanel } from './SettingsPanel'
 import { ResearchPanel } from '@/components/ai/ResearchPanel'
 import { LibrarianPanel } from '@/components/ai/LibrarianPanel'
+import { DailyReviewView } from './DailyReviewView'
+import { KnowledgeGraphView } from './KnowledgeGraphView'
 
 export function MainContent() {
   const { activeView } = useAppStore()
@@ -19,6 +21,8 @@ export function MainContent() {
       {activeView.type === 'settings' && <SettingsPanel />}
       {activeView.type === 'research' && <ResearchPanel />}
       {activeView.type === 'study-coach' && <LibrarianPanel />}
+      {activeView.type === 'daily-review' && <DailyReviewView />}
+      {activeView.type === 'knowledge-graph' && <KnowledgeGraphView />}
     </div>
   )
 }

@@ -303,6 +303,8 @@ export function HandwritingCanvas({ noteId }: Props) {
     if (penOnly && e.pointerType === 'touch' && activePenId.current !== null) return
     if (penOnly && e.pointerType === 'touch' && navigator.maxTouchPoints > 0) {
       // Allow only pen/mouse in pen-only mode
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-expect-error – pointerType is 'touch' here but we check defensively for future paths
       if (e.pointerType !== 'pen' && e.pointerType !== 'mouse') return
     }
 

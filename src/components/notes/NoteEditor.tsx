@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState } from 'react'
+import { useEffect, useCallback, useState, useRef, useMemo } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
@@ -17,6 +17,7 @@ import { BubbleMenuBar } from './BubbleMenu'
 import { SlashCommands } from './SlashMenu'
 import { InlineEquation, BlockEquation } from './EquationNode'
 import { SimWidgetNode } from '@/components/simulation/SimWidget'
+import { createWikiLinkExtension } from './WikiLink'
 import { CanvasEditor } from '@/components/canvas/CanvasEditor'
 import { HandwritingCanvas } from '@/components/canvas/HandwritingCanvas'
 import { FileAttachments } from './FileAttachments'
@@ -47,6 +48,17 @@ export function NoteEditor({ noteId }: Props) {
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved')
   const [isRTL, setIsRTL] = useState(() => note?.isRTL ?? false)
 
+  // Keep a ref so the WikiLink closure always reads the current noteId
+  const noteIdRef = useRef(noteId)
+  useEffect(() => { noteIdRef.current = noteId }, [noteId])
+
+  // Stable WikiLink extension (created once per component instance)
+  const WikiLinkExtension = useMemo(
+    () => createWikiLinkExtension(() => noteIdRef.current),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  )
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ codeBlock: false }),
@@ -63,6 +75,7 @@ export function NoteEditor({ noteId }: Props) {
       BlockEquation,
       SimWidgetNode,
       SlashCommands,
+      WikiLinkExtension,
     ],
     content: note?.content ? JSON.parse(note.content) : '',
     editorProps: {
@@ -168,8 +181,52 @@ export function NoteEditor({ noteId }: Props) {
 
         {/* Content area */}
         <div className="flex flex-1 min-h-0 overflow-hidden">
-          {/* Document editor */}
-          {(mode === 'document' || mode === 'split') && (
+          {/* Cornell layout */}
+          {note.template === 'cornell' && (mode === 'document' || mode === 'split') && (
+            <div className="flex flex-col flex-1 overflow-hidden">
+              {/* Middle row: Cues + Notes */}
+              <div className="flex flex-1 min-h-0 overflow-hidden">
+                {/* Cues column (30%) */}
+                <div className="flex flex-col border-r border-[hsl(var(--border))]" style={{ width: '30%' }}>
+                  <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))] border-b border-[hsl(var(--border))]">
+                    Cues
+                  </div>
+                  <textarea
+                    className="flex-1 resize-none bg-transparent px-3 py-2 text-sm outline-none text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))]"
+                    placeholder="Key questions, cues, or keywords…"
+                    value={note.cornellCues ?? ''}
+                    onChange={(e) => updateNote(noteId, { cornellCues: e.target.value })}
+                  />
+                </div>
+                {/* Notes column (70%) */}
+                <div className="flex flex-col overflow-y-auto" style={{ width: '70%' }}>
+                  {editor && <BubbleMenuBar editor={editor} />}
+                  <div className="note-page-container">
+                    <FileAttachments noteId={noteId} />
+                    <div dir={isRTL ? 'rtl' : 'ltr'} className="flex-1">
+                      <EditorContent editor={editor} className="flex-1" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {/* Summary row (full width) */}
+              <div className="border-t border-[hsl(var(--border))] flex flex-col" style={{ minHeight: '80px' }}>
+                <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))] border-b border-[hsl(var(--border))]">
+                  Summary
+                </div>
+                <textarea
+                  className="flex-1 resize-none bg-transparent px-3 py-2 text-sm outline-none text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))]"
+                  placeholder="Summarize the main ideas…"
+                  value={note.cornellSummary ?? ''}
+                  onChange={(e) => updateNote(noteId, { cornellSummary: e.target.value })}
+                  style={{ minHeight: '60px' }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Document editor (non-Cornell) */}
+          {note.template !== 'cornell' && (mode === 'document' || mode === 'split') && (
             <div className={cn('flex flex-col overflow-y-auto', mode === 'split' ? 'w-1/2 border-r border-[hsl(var(--border))]' : 'flex-1')}>
               {editor && <BubbleMenuBar editor={editor} />}
               {/* File attachments */}

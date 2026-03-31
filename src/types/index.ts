@@ -79,6 +79,9 @@ export interface Note {
   color?:          string      // note accent color for visual grouping
   reviewData?:     ReviewData  // spaced-repetition scheduling
   attachments?:    NoteAttachment[]
+  cornellCues?:    string      // Cornell layout — left cues column
+  cornellSummary?: string      // Cornell layout — bottom summary row
+  noteType?:       'fleeting' | 'literature' | 'permanent'
 
   createdAt: number
   updatedAt: number
