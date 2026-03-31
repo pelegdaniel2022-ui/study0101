@@ -2,11 +2,12 @@ import { useState } from 'react'
 import JSZip from 'jszip'
 import { useAIStore } from '@/store/ai'
 import { useAppStore } from '@/store/app'
-import { Eye, EyeOff, Key, Moon, Sun, Smartphone, Download, Loader2 } from 'lucide-react'
+import { LOCAL_MODELS, isWebGPUSupported } from '@/lib/webllm'
+import { Eye, EyeOff, Key, Moon, Sun, Smartphone, Download, Loader2, Cpu, Cloud } from 'lucide-react'
 import { notesToObsidianVault } from '@/lib/tiptapToMarkdown'
 
 export function SettingsPanel() {
-  const { apiKeys, setAPIKeys } = useAIStore()
+  const { apiKeys, setAPIKeys, aiMode, setAIMode, localModel, setLocalModel } = useAIStore()
   const { darkMode, toggleDarkMode, notes, courses, lectures } = useAppStore()
   const [show, setShow] = useState({ openai: false, perplexity: false, anthropic: false })
   const [exportStatus, setExportStatus] = useState<'idle' | 'exporting' | 'done'>('idle')
@@ -70,6 +71,65 @@ export function SettingsPanel() {
   return (
     <div className="h-full overflow-y-auto px-8 py-6 max-w-xl mx-auto">
       <h1 className="text-xl font-bold mb-6">Settings</h1>
+
+      {/* AI Mode */}
+      <section className="mb-8">
+        <div className="flex items-center gap-2 mb-4">
+          <Cpu size={16} className="text-[hsl(var(--primary))]" />
+          <h2 className="font-semibold">AI Mode</h2>
+        </div>
+        <p className="text-xs text-[hsl(var(--muted-foreground))] mb-4">
+          Cloud uses OpenAI GPT-4o (requires API key). Local runs a language model on-device via WebGPU — fully offline, no key needed. First use downloads the model to your device.
+        </p>
+        <div className="flex gap-2 mb-4">
+          <button
+            onClick={() => setAIMode('cloud')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-medium transition-colors ${
+              aiMode === 'cloud'
+                ? 'bg-[hsl(var(--primary))] text-white border-transparent'
+                : 'border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))]'
+            }`}
+          >
+            <Cloud size={14} /> Cloud (GPT-4o)
+          </button>
+          <button
+            onClick={() => setAIMode('local')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-medium transition-colors ${
+              aiMode === 'local'
+                ? 'bg-[hsl(var(--primary))] text-white border-transparent'
+                : 'border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))]'
+            }`}
+          >
+            <Cpu size={14} /> Local (offline)
+          </button>
+        </div>
+        {aiMode === 'local' && (
+          <div className="space-y-3">
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Model</label>
+              <select
+                value={localModel}
+                onChange={(e) => setLocalModel(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-sm outline-none focus:border-[hsl(var(--primary))]"
+              >
+                {LOCAL_MODELS.map((m) => (
+                  <option key={m.id} value={m.id}>{m.label}</option>
+                ))}
+              </select>
+            </div>
+            {!isWebGPUSupported() && (
+              <p className="text-xs text-red-500 bg-red-500/10 rounded-xl px-3 py-2">
+                WebGPU is not available in this browser. Local mode requires Chrome 113+ or Edge 113+.
+              </p>
+            )}
+            {isWebGPUSupported() && (
+              <p className="text-xs text-emerald-600 bg-emerald-500/10 rounded-xl px-3 py-2">
+                ✓ WebGPU is available. Open the AI Tutor in any note to load the model.
+              </p>
+            )}
+          </div>
+        )}
+      </section>
 
       {/* API Keys */}
       <section className="mb-8">

@@ -18,6 +18,7 @@
     "@capacitor/cli": "^8.3.0",
     "@capacitor/core": "^8.3.0",
     "@excalidraw/excalidraw": "^0.18.0",
+    "@mlc-ai/web-llm": "^0.2.82",
     "@tiptap/extension-bubble-menu": "^3.21.0",
     "@tiptap/extension-code-block-lowlight": "^3.21.0",
     "@tiptap/extension-highlight": "^3.21.0",

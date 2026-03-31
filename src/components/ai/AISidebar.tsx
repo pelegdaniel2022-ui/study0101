@@ -2,8 +2,9 @@ import { useState, useRef, useEffect } from 'react'
 import { useAIStore } from '@/store/ai'
 import { useAppStore } from '@/store/app'
 import { searchNotes } from '@/lib/rag'
+import { getWebLLMEngine, isWebGPUSupported, type ProgressReport } from '@/lib/webllm'
 import OpenAI from 'openai'
-import { X, Send, Trash2, Sparkles, Bot } from 'lucide-react'
+import { X, Send, Trash2, Sparkles, Bot, Cpu } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import katex from 'katex'
 
@@ -23,64 +24,22 @@ interface Props {
 }
 
 export function AISidebar({ noteId, onClose }: Props) {
-  const { apiKeys, chatHistory, addMessage, clearChat, isThinking, setThinking } = useAIStore()
+  const { apiKeys, chatHistory, addMessage, clearChat, isThinking, setThinking, aiMode, localModel } = useAIStore()
   const { notes } = useAppStore()
   const messages = chatHistory[noteId] ?? []
   const [input, setInput] = useState('')
+  const [loadProgress, setLoadProgress] = useState<ProgressReport | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  const isLocal = aiMode === 'local'
+  const canSend = isLocal
+    ? (isWebGPUSupported() && !!input.trim() && !isThinking)
+    : (!!apiKeys.openai && !!input.trim() && !isThinking)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isThinking])
-
-  async function send() {
-    const text = input.trim()
-    if (!text || !apiKeys.openai || isThinking) return
-    setInput('')
-    addMessage(noteId, { role: 'user', content: text })
-    setThinking(true)
-
-    try {
-      const client = new OpenAI({ apiKey: apiKeys.openai, dangerouslyAllowBrowser: true })
-
-      // RAG: find relevant note chunks
-      let context = ''
-      try {
-        const hits = await searchNotes(apiKeys.openai, text, 4)
-        if (hits.length) {
-          const noteMap = Object.fromEntries(notes.map((n) => [n.id, n.title]))
-          context = '\n\nRelevant excerpts from your notes:\n' +
-            hits.map((h) => `[${noteMap[h.noteId] ?? 'Note'}]: ${h.text}`).join('\n\n')
-        }
-      } catch { /* RAG optional */ }
-
-      // Current note context
-      const currentNote = notes.find((n) => n.id === noteId)
-      const noteCtx = currentNote?.content
-        ? `\n\nCurrent note "${currentNote.title}":\n${extractText(currentNote.content)}`
-        : ''
-
-      const history = messages.slice(-10).map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }))
-
-      const resp = await client.chat.completions.create({
-        model: 'gpt-4o',
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT + noteCtx + context },
-          ...history,
-          { role: 'user', content: text },
-        ],
-      })
-
-      const reply = resp.choices[0]?.message?.content ?? 'No response.'
-      addMessage(noteId, { role: 'assistant', content: reply })
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Unknown error'
-      addMessage(noteId, { role: 'assistant', content: `Error: ${msg}` })
-    } finally {
-      setThinking(false)
-    }
-  }
 
   function extractText(contentJson: string): string {
     try {
@@ -95,14 +54,94 @@ export function AISidebar({ noteId, onClose }: Props) {
     } catch { return '' }
   }
 
+  async function buildContext(text: string): Promise<string> {
+    let context = ''
+    // RAG hits (only when cloud, as local has no embedding key)
+    if (!isLocal && apiKeys.openai) {
+      try {
+        const hits = await searchNotes(apiKeys.openai, text, 4)
+        if (hits.length) {
+          const noteMap = Object.fromEntries(notes.map((n) => [n.id, n.title]))
+          context = '\n\nRelevant excerpts from your notes:\n' +
+            hits.map((h) => `[${noteMap[h.noteId] ?? 'Note'}]: ${h.text}`).join('\n\n')
+        }
+      } catch { /* RAG optional */ }
+    }
+    const currentNote = notes.find((n) => n.id === noteId)
+    const noteCtx = currentNote?.content
+      ? `\n\nCurrent note "${currentNote.title}":\n${extractText(currentNote.content)}`
+      : ''
+    return noteCtx + context
+  }
+
+  async function sendCloud(text: string) {
+    const client = new OpenAI({ apiKey: apiKeys.openai, dangerouslyAllowBrowser: true })
+    const ctx = await buildContext(text)
+    const history = messages.slice(-10).map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }))
+    const resp = await client.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT + ctx },
+        ...history,
+        { role: 'user', content: text },
+      ],
+    })
+    return resp.choices[0]?.message?.content ?? 'No response.'
+  }
+
+  async function sendLocal(text: string) {
+    setLoadProgress({ progress: 0, text: 'Loading model…' })
+    const eng = await getWebLLMEngine(localModel, (r) => setLoadProgress(r))
+    setLoadProgress(null)
+
+    const ctx = await buildContext(text)
+    const history = messages.slice(-8).map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }))
+
+    const completion = await eng.chat.completions.create({
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT + ctx },
+        ...history,
+        { role: 'user', content: text },
+      ],
+      temperature: 0.7,
+      max_tokens: 800,
+    })
+    return completion.choices[0]?.message?.content ?? 'No response.'
+  }
+
+  async function send() {
+    const text = input.trim()
+    if (!text || isThinking) return
+    setInput('')
+    addMessage(noteId, { role: 'user', content: text })
+    setThinking(true)
+
+    try {
+      const reply = isLocal ? await sendLocal(text) : await sendCloud(text)
+      addMessage(noteId, { role: 'assistant', content: reply })
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Unknown error'
+      addMessage(noteId, { role: 'assistant', content: `Error: ${msg}` })
+    } finally {
+      setThinking(false)
+    }
+  }
+
+  const noKeyWarning = !isLocal && !apiKeys.openai
+
   return (
     <div className="flex flex-col w-80 border-l border-[hsl(var(--border))] bg-[hsl(var(--background))] shrink-0">
       {/* Header */}
       <div className="flex items-center gap-2 px-3 py-2.5 border-b border-[hsl(var(--border))]">
-        <Bot size={15} className="text-[hsl(var(--primary))]" />
-        <span className="text-sm font-semibold flex-1">AI Tutor</span>
-        {!apiKeys.openai && (
+        {isLocal ? <Cpu size={15} className="text-[hsl(var(--primary))]" /> : <Bot size={15} className="text-[hsl(var(--primary))]" />}
+        <span className="text-sm font-semibold flex-1">
+          AI Tutor {isLocal ? '(local)' : '(cloud)'}
+        </span>
+        {noKeyWarning && (
           <span className="text-xs text-amber-500 mr-1">No API key</span>
+        )}
+        {isLocal && !isWebGPUSupported() && (
+          <span className="text-xs text-red-500 mr-1">No WebGPU</span>
         )}
         <button onClick={() => clearChat(noteId)} className="p-1 hover:text-red-500 text-[hsl(var(--muted-foreground))]" title="Clear chat">
           <Trash2 size={13} />
@@ -117,13 +156,31 @@ export function AISidebar({ noteId, onClose }: Props) {
         {messages.length === 0 && (
           <div className="text-center py-8">
             <Sparkles size={24} className="mx-auto mb-2 text-[hsl(var(--primary)/0.5)]" />
-            <p className="text-xs text-[hsl(var(--muted-foreground))]">Ask me anything about physics!<br />I can see your current note.</p>
+            <p className="text-xs text-[hsl(var(--muted-foreground))]">
+              {isLocal
+                ? `Running ${localModel.split('-').slice(0, 3).join(' ')} on-device.\nFirst message downloads the model.`
+                : 'Ask me anything about physics!\nI can see your current note.'}
+            </p>
           </div>
         )}
         {messages.map((msg) => (
           <MessageBubble key={msg.id} role={msg.role} content={msg.content} />
         ))}
-        {isThinking && (
+
+        {/* Model load progress */}
+        {loadProgress && (
+          <div className="space-y-1 px-1">
+            <p className="text-xs text-[hsl(var(--muted-foreground))] truncate">{loadProgress.text}</p>
+            <div className="w-full h-1.5 rounded-full bg-[hsl(var(--muted))] overflow-hidden">
+              <div
+                className="h-full bg-[hsl(var(--primary))] transition-all duration-300"
+                style={{ width: `${Math.round(loadProgress.progress * 100)}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {isThinking && !loadProgress && (
           <div className="flex gap-2 items-center text-xs text-[hsl(var(--muted-foreground))]">
             <div className="flex gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--primary))] animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -138,9 +195,14 @@ export function AISidebar({ noteId, onClose }: Props) {
 
       {/* Input */}
       <div className="px-3 pb-3 pt-1 border-t border-[hsl(var(--border))]">
-        {!apiKeys.openai && (
+        {noKeyWarning && (
           <p className="text-xs text-amber-600 mb-2 text-center">
             Add your OpenAI API key in Settings to use the tutor.
+          </p>
+        )}
+        {isLocal && !isWebGPUSupported() && (
+          <p className="text-xs text-red-600 mb-2 text-center">
+            WebGPU not available on this device/browser.
           </p>
         )}
         <div className="flex gap-2 items-end">
@@ -161,10 +223,10 @@ export function AISidebar({ noteId, onClose }: Props) {
           />
           <button
             onClick={send}
-            disabled={!input.trim() || !apiKeys.openai || isThinking}
+            disabled={!canSend}
             className={cn(
               'p-2 rounded-xl transition-colors shrink-0',
-              input.trim() && apiKeys.openai && !isThinking
+              canSend
                 ? 'bg-[hsl(var(--primary))] text-white'
                 : 'bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]'
             )}

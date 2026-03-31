@@ -9,12 +9,16 @@ interface AIState {
   globalChatHistory: ChatMessage[]              // for standalone tutor
   isThinking: boolean
   researchHistory: Array<{ query: string; result: string; timestamp: number }>
+  aiMode: 'cloud' | 'local'
+  localModel: string
 
   setAPIKeys: (keys: Partial<APIKeys>) => void
   addMessage: (noteId: string | null, message: Omit<ChatMessage, 'id' | 'timestamp'>) => void
   clearChat: (noteId: string | null) => void
   setThinking: (v: boolean) => void
   addResearch: (query: string, result: string) => void
+  setAIMode: (mode: 'cloud' | 'local') => void
+  setLocalModel: (model: string) => void
 }
 
 export const useAIStore = create<AIState>()(
@@ -25,8 +29,12 @@ export const useAIStore = create<AIState>()(
       globalChatHistory: [],
       isThinking: false,
       researchHistory: [],
+      aiMode: 'cloud',
+      localModel: 'Llama-3.2-1B-Instruct-q4f16_1-MLC',
 
       setAPIKeys: (keys) => set((s) => ({ apiKeys: { ...s.apiKeys, ...keys } })),
+      setAIMode: (mode) => set({ aiMode: mode }),
+      setLocalModel: (model) => set({ localModel: model }),
 
       addMessage: (noteId, message) => {
         const msg: ChatMessage = { ...message, id: uid(), timestamp: Date.now() }
@@ -68,6 +76,8 @@ export const useAIStore = create<AIState>()(
         chatHistory: s.chatHistory,
         globalChatHistory: s.globalChatHistory,
         researchHistory: s.researchHistory,
+        aiMode: s.aiMode,
+        localModel: s.localModel,
       }),
     }
   )
