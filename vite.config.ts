@@ -5,6 +5,7 @@ import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: './',   // Required for Capacitor: assets load from file:// on Android
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
