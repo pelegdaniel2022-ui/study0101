@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - claude/agent-management-system-J5wTy
+      - claude/agent-management-system-v1IY7
   workflow_dispatch:
 
 jobs:
@@ -109,7 +110,7 @@ jobs:
             3. If asked, enable "Install unknown apps" for your browser
             4. Tap Install
 
-            Built from branch `claude/agent-management-system-J5wTy`
+            Built from branch `claude/agent-management-system-v1IY7`
           files: output/PhysicsStudy.apk
           make_latest: true
         env:
