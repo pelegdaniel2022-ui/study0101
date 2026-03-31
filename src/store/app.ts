@@ -12,6 +12,8 @@ interface AppState {
   sidebarOpen:       boolean
   darkMode:          boolean
   fullscreenNote:    boolean
+  studyStreak:       number        // consecutive days reviewed
+  lastReviewDate:    string | null // ISO date 'YYYY-MM-DD' of last review session
 
   // Navigation
   setActiveView:       (view: ActiveView) => void
@@ -57,6 +59,9 @@ interface AppState {
   updateFlashcards:           (noteId: string, cards: FlashCard[]) => void
   updateFlashcardReviewData:  (noteId: string, cardId: string, data: ReviewData) => void
 
+  // Study streak
+  recordReviewSession: () => void
+
   // Daily journal
   getOrCreateDailyNote: () => Note
 
@@ -84,6 +89,8 @@ export const useAppStore = create<AppState>()(
       sidebarOpen:       true,
       darkMode:          false,
       fullscreenNote:    false,
+      studyStreak:       0,
+      lastReviewDate:    null,
 
       // ── Navigation ──────────────────────────────────────────────────────
 
@@ -193,6 +200,17 @@ export const useAppStore = create<AppState>()(
           n.id === noteId ? { ...n, handwritingStrokes: strokes, updatedAt: Date.now() } : n
         ),
       })),
+
+      // ── Study streak ──────────────────────────────────────────────────────
+
+      recordReviewSession: () => {
+        const today = new Date().toISOString().slice(0, 10)
+        const { lastReviewDate, studyStreak } = get()
+        if (lastReviewDate === today) return // already recorded today
+        const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10)
+        const newStreak = lastReviewDate === yesterday ? studyStreak + 1 : 1
+        set({ studyStreak: newStreak, lastReviewDate: today })
+      },
 
       // ── PKM — bidirectional links ─────────────────────────────────────────
 

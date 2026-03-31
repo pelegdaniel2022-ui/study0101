@@ -2,7 +2,7 @@ import type { Editor } from '@tiptap/react'
 import type { Note } from '@/types'
 import { useAppStore } from '@/store/app'
 import { useState } from 'react'
-import { Tag, X, Plus, Link2 } from 'lucide-react'
+import { Tag, X, Plus, Link2, Clock, Star } from 'lucide-react'
 
 interface Props {
   note: Note
@@ -16,12 +16,24 @@ const NOTE_TYPES: { value: 'fleeting' | 'literature' | 'permanent'; label: strin
 ]
 
 export function NoteMetaBar({ note, editor }: Props) {
-  const { updateNote, notes, setActiveView } = useAppStore()
+  const { updateNote, notes, setActiveView, toggleFavorite } = useAppStore()
   const [addingTag, setAddingTag] = useState(false)
   const [tagInput, setTagInput] = useState('')
 
   const wordCount = editor?.getText().split(/\s+/).filter(Boolean).length ?? 0
   const charCount = editor?.getText().length ?? 0
+
+  // Next review date
+  const nextReview = note.reviewData
+    ? (() => {
+        const d = new Date(note.reviewData.nextReview)
+        const now = new Date()
+        const diffDays = Math.ceil((d.getTime() - now.getTime()) / 86400000)
+        if (diffDays <= 0) return 'Due now'
+        if (diffDays === 1) return 'Tomorrow'
+        return `In ${diffDays}d`
+      })()
+    : null
 
   // Backlinks: notes that link TO this note
   const backlinks = notes.filter((n) => n.linkedNoteIds?.includes(note.id))
@@ -65,10 +77,22 @@ export function NoteMetaBar({ note, editor }: Props) {
             <Plus size={11} /> Add tag
           </button>
         )}
-        <div className="ml-auto flex gap-3">
-          <span>{wordCount} words</span>
-          <span>{charCount} chars</span>
-          <span>Updated {new Date(note.updatedAt).toLocaleTimeString()}</span>
+        <div className="ml-auto flex items-center gap-3">
+          {nextReview && (
+            <span className={`flex items-center gap-1 ${nextReview === 'Due now' ? 'text-amber-500' : ''}`}>
+              <Clock size={11} /> {nextReview}
+            </span>
+          )}
+          <span>{wordCount}w</span>
+          <span>{charCount}c</span>
+          <span>Saved {new Date(note.updatedAt).toLocaleTimeString()}</span>
+          <button
+            onClick={() => toggleFavorite(note.id)}
+            title={note.isFavorite ? 'Remove from starred' : 'Star note'}
+            className="hover:text-amber-400 transition-colors"
+          >
+            <Star size={12} className={note.isFavorite ? 'fill-amber-400 text-amber-400' : ''} />
+          </button>
         </div>
       </div>
 

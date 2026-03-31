@@ -1,52 +1,57 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 @import "tippy.js/dist/tippy.css";
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
+    /* Sofia design system — light theme */
+    --background: 0 0% 98%;
+    --foreground: 0 0% 10%;
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    --card-foreground: 0 0% 10%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 262 80% 58%;
+    --popover-foreground: 0 0% 10%;
+    --primary: 263 69% 50%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%;
+    --secondary: 240 6% 93%;
+    --secondary-foreground: 0 0% 10%;
+    --muted: 240 6% 93%;
+    --muted-foreground: 240 4% 46%;
+    --accent: 240 6% 93%;
+    --accent-foreground: 0 0% 10%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 262 80% 58%;
+    --border: 240 6% 90%;
+    --input: 240 6% 90%;
+    --ring: 263 69% 50%;
     --radius: 0.5rem;
-    --sidebar-width: 260px;
+    --sidebar-width: 280px;
+    --surface: 0 0% 100%;
+    --surface-hover: 240 6% 96%;
   }
 
   .dark {
-    --background: 240 11% 6%;
-    --foreground: 220 14% 90%;
-    --card: 240 11% 8%;
-    --card-foreground: 220 14% 90%;
-    --popover: 240 11% 8%;
-    --popover-foreground: 220 14% 90%;
-    --primary: 262 80% 62%;
+    /* Sofia design system — dark theme */
+    --background: 240 15% 5%;
+    --foreground: 240 10% 95%;
+    --card: 240 14% 9%;
+    --card-foreground: 240 10% 95%;
+    --popover: 240 14% 9%;
+    --popover-foreground: 240 10% 95%;
+    --primary: 263 69% 60%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 240 8% 13%;
-    --secondary-foreground: 220 14% 90%;
-    --muted: 240 8% 12%;
-    --muted-foreground: 220 10% 55%;
-    --accent: 240 8% 15%;
-    --accent-foreground: 220 14% 90%;
+    --secondary: 240 13% 13%;
+    --secondary-foreground: 240 10% 95%;
+    --muted: 240 13% 12%;
+    --muted-foreground: 240 6% 60%;
+    --accent: 240 13% 15%;
+    --accent-foreground: 240 10% 95%;
     --destructive: 0 63% 42%;
-    --destructive-foreground: 220 14% 90%;
-    --border: 240 8% 15%;
-    --input: 240 8% 15%;
-    --ring: 262 80% 62%;
+    --destructive-foreground: 240 10% 95%;
+    --border: 240 12% 19%;
+    --input: 240 12% 19%;
+    --ring: 263 69% 60%;
+    --surface: 240 14% 9%;
+    --surface-hover: 240 13% 13%;
   }
 }
 
@@ -60,6 +65,8 @@
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    line-height: 1.65;
     margin: 0;
     padding: 0;
     height: 100dvh;
@@ -80,7 +87,7 @@
   align-items: center;
   padding: 24px 16px 48px;
   min-height: 100%;
-  background: hsl(var(--muted) / 0.4);
+  background: hsl(var(--muted) / 0.5);
 }
 
 .note-page-container > * {
@@ -98,9 +105,13 @@
   width: 100%;
 }
 
+.dark .note-page-container {
+  background: hsl(240 15% 4%);
+}
+
 .dark .note-page-container .tiptap {
   background: hsl(var(--card));
-  box-shadow: 0 1px 3px hsl(0 0% 0% / 0.3), 0 4px 20px hsl(0 0% 0% / 0.25);
+  box-shadow: 0 1px 3px hsl(0 0% 0% / 0.4), 0 4px 24px hsl(0 0% 0% / 0.3);
 }
 
 @media (max-width: 640px) {
@@ -113,6 +124,8 @@
 .ProseMirror {
   outline: none;
   min-height: 300px;
+  font-size: 15px;
+  line-height: 1.65;
 }
 
 .ProseMirror p.is-editor-empty:first-child::before {
@@ -144,7 +157,7 @@
 }
 
 .ProseMirror blockquote {
-  border-left: 3px solid #6d28d9;
+  border-left: 3px solid hsl(var(--primary));
   padding-left: 16px;
   font-style: italic;
   color: hsl(var(--muted-foreground));
@@ -221,11 +234,20 @@
   color: #fef9c3;
 }
 
-/* Tippy popup */
+/* ─── Tippy popup ──────────────────────────────────────────────────────────── */
 .tippy-box {
   background: none;
   box-shadow: none;
 }
 .tippy-content {
   padding: 0;
+}
+
+/* ─── Sidebar section labels ───────────────────────────────────────────────── */
+.sidebar-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: hsl(var(--muted-foreground));
 }

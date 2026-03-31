@@ -22,41 +22,51 @@ export function NoteToolbar({ editor, saveStatus, isRTL, onToggleRTL }: Props) {
   }
 
   return (
-    <div className="flex items-center gap-0.5 px-4 py-1 border-b border-[hsl(var(--border))] flex-wrap bg-[hsl(var(--background)/0.8)] backdrop-blur-sm">
-      <TB onClick={() => editor.chain().focus().undo().run()} active={false} title="Undo" disabled={!editor.can().undo()}><Undo size={13} /></TB>
-      <TB onClick={() => editor.chain().focus().redo().run()} active={false} title="Redo" disabled={!editor.can().redo()}><Redo size={13} /></TB>
+    <div className="flex items-center gap-0.5 px-3 py-1.5 border-b border-[hsl(var(--border))] flex-wrap bg-[hsl(var(--background)/0.9)] backdrop-blur-sm">
+      {/* History */}
+      <TB onClick={() => editor.chain().focus().undo().run()} active={false} title="Undo (Ctrl+Z)" disabled={!editor.can().undo()}><Undo size={16} /></TB>
+      <TB onClick={() => editor.chain().focus().redo().run()} active={false} title="Redo (Ctrl+Y)" disabled={!editor.can().redo()}><Redo size={16} /></TB>
       <Sep />
-      <TB onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive('bold')} title="Bold (Ctrl+B)"><Bold size={13} /></TB>
-      <TB onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive('italic')} title="Italic (Ctrl+I)"><Italic size={13} /></TB>
-      <TB onClick={() => editor.chain().focus().toggleUnderline().run()} active={editor.isActive('underline')} title="Underline"><Underline size={13} /></TB>
-      <TB onClick={() => editor.chain().focus().toggleStrike().run()} active={editor.isActive('strike')} title="Strike"><Strikethrough size={13} /></TB>
-      <TB onClick={() => editor.chain().focus().toggleHighlight().run()} active={editor.isActive('highlight')} title="Highlight"><Highlighter size={13} /></TB>
-      <TB onClick={() => editor.chain().focus().toggleCode().run()} active={editor.isActive('code')} title="Inline code"><Code size={13} /></TB>
+
+      {/* Inline formatting */}
+      <TB onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive('bold')} title="Bold (Ctrl+B)"><Bold size={16} /></TB>
+      <TB onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive('italic')} title="Italic (Ctrl+I)"><Italic size={16} /></TB>
+      <TB onClick={() => editor.chain().focus().toggleUnderline().run()} active={editor.isActive('underline')} title="Underline (Ctrl+U)"><Underline size={16} /></TB>
+      <TB onClick={() => editor.chain().focus().toggleStrike().run()} active={editor.isActive('strike')} title="Strikethrough"><Strikethrough size={16} /></TB>
+      <TB onClick={() => editor.chain().focus().toggleHighlight().run()} active={editor.isActive('highlight')} title="Highlight"><Highlighter size={16} /></TB>
+      <TB onClick={() => editor.chain().focus().toggleCode().run()} active={editor.isActive('code')} title="Inline code"><Code size={16} /></TB>
       <Sep />
-      <TB onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} active={editor.isActive('heading', { level: 1 })} title="H1"><Heading1 size={13} /></TB>
-      <TB onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} active={editor.isActive('heading', { level: 2 })} title="H2"><Heading2 size={13} /></TB>
-      <TB onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} active={editor.isActive('heading', { level: 3 })} title="H3"><Heading3 size={13} /></TB>
+
+      {/* Headings */}
+      <TB onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} active={editor.isActive('heading', { level: 1 })} title="Heading 1"><Heading1 size={16} /></TB>
+      <TB onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} active={editor.isActive('heading', { level: 2 })} title="Heading 2"><Heading2 size={16} /></TB>
+      <TB onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} active={editor.isActive('heading', { level: 3 })} title="Heading 3"><Heading3 size={16} /></TB>
       <Sep />
-      <TB onClick={() => editor.chain().focus().setTextAlign('left').run()} active={editor.isActive({ textAlign: 'left' })} title="Align left"><AlignLeft size={13} /></TB>
-      <TB onClick={() => editor.chain().focus().setTextAlign('center').run()} active={editor.isActive({ textAlign: 'center' })} title="Align center"><AlignCenter size={13} /></TB>
-      <TB onClick={() => editor.chain().focus().setTextAlign('right').run()} active={editor.isActive({ textAlign: 'right' })} title="Align right"><AlignRight size={13} /></TB>
-      <Sep />
+
+      {/* Alignment + RTL */}
+      <TB onClick={() => editor.chain().focus().setTextAlign('left').run()} active={editor.isActive({ textAlign: 'left' })} title="Align left"><AlignLeft size={16} /></TB>
+      <TB onClick={() => editor.chain().focus().setTextAlign('center').run()} active={editor.isActive({ textAlign: 'center' })} title="Align center"><AlignCenter size={16} /></TB>
+      <TB onClick={() => editor.chain().focus().setTextAlign('right').run()} active={editor.isActive({ textAlign: 'right' })} title="Align right"><AlignRight size={16} /></TB>
       <TB onClick={onToggleRTL} active={isRTL} title={isRTL ? 'Switch to LTR' : 'Switch to RTL'}>
-        <span className="text-[10px] font-bold leading-none">{isRTL ? 'LTR' : 'RTL'}</span>
+        <span className="text-[11px] font-bold leading-none">{isRTL ? 'LTR' : 'RTL'}</span>
       </TB>
       <Sep />
-      <TB onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive('bulletList')} title="Bullet list"><List size={13} /></TB>
-      <TB onClick={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive('orderedList')} title="Ordered list"><ListOrdered size={13} /></TB>
-      <TB onClick={() => editor.chain().focus().toggleTaskList().run()} active={editor.isActive('taskList')} title="Task list"><CheckSquare size={13} /></TB>
-      <TB onClick={() => editor.chain().focus().toggleBlockquote().run()} active={editor.isActive('blockquote')} title="Quote"><Quote size={13} /></TB>
-      <TB onClick={() => editor.chain().focus().toggleCodeBlock().run()} active={editor.isActive('codeBlock')} title="Code block"><Code2 size={13} /></TB>
-      <TB onClick={() => editor.chain().focus().setHorizontalRule().run()} active={false} title="Divider"><Minus size={13} /></TB>
+
+      {/* Lists */}
+      <TB onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive('bulletList')} title="Bullet list"><List size={16} /></TB>
+      <TB onClick={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive('orderedList')} title="Numbered list"><ListOrdered size={16} /></TB>
+      <TB onClick={() => editor.chain().focus().toggleTaskList().run()} active={editor.isActive('taskList')} title="Task list"><CheckSquare size={16} /></TB>
+      <TB onClick={() => editor.chain().focus().toggleBlockquote().run()} active={editor.isActive('blockquote')} title="Quote"><Quote size={16} /></TB>
+      <TB onClick={() => editor.chain().focus().toggleCodeBlock().run()} active={editor.isActive('codeBlock')} title="Code block"><Code2 size={16} /></TB>
+      <TB onClick={() => editor.chain().focus().setHorizontalRule().run()} active={false} title="Divider"><Minus size={16} /></TB>
       <Sep />
-      <TB onClick={insertBlockEq} active={false} title="Block equation"><FunctionSquare size={13} /></TB>
-      <TB onClick={insertSim} active={false} title="Physics simulation"><FlaskConical size={13} /></TB>
+
+      {/* Special */}
+      <TB onClick={insertBlockEq} active={false} title="Block equation (LaTeX)"><FunctionSquare size={16} /></TB>
+      <TB onClick={insertSim} active={false} title="Physics simulation"><FlaskConical size={16} /></TB>
 
       {/* Save status */}
-      <div className="ml-auto text-xs text-[hsl(var(--muted-foreground))]">
+      <div className="ml-auto text-xs text-[hsl(var(--muted-foreground))] font-medium">
         {saveStatus === 'saved' && <span className="text-emerald-500">Saved</span>}
         {saveStatus === 'saving' && <span>Saving…</span>}
         {saveStatus === 'unsaved' && <span className="text-amber-500">Unsaved</span>}
@@ -74,8 +84,10 @@ function TB({ children, onClick, active, title, disabled }: {
       title={title}
       disabled={disabled}
       className={cn(
-        'p-1.5 rounded transition-colors',
-        active ? 'bg-[hsl(var(--primary)/0.15)] text-[hsl(var(--primary))]' : 'text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--foreground))]',
+        'w-8 h-8 flex items-center justify-center rounded-lg transition-colors',
+        active
+          ? 'bg-[hsl(var(--primary)/0.15)] text-[hsl(var(--primary))]'
+          : 'text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--foreground))]',
         disabled && 'opacity-30 cursor-not-allowed'
       )}
     >
@@ -85,5 +97,5 @@ function TB({ children, onClick, active, title, disabled }: {
 }
 
 function Sep() {
-  return <div className="w-px h-4 bg-[hsl(var(--border))] mx-0.5" />
+  return <div className="w-px h-5 bg-[hsl(var(--border))] mx-0.5" />
 }

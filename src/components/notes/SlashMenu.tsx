@@ -2,7 +2,7 @@ import { Extension } from '@tiptap/core'
 import { ReactRenderer } from '@tiptap/react'
 import Suggestion from '@tiptap/suggestion'
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
-import { Heading1, Heading2, Heading3, List, ListOrdered, Code2, Quote, Minus, FlaskConical, FunctionSquare, CheckSquare, LayoutTemplate } from 'lucide-react'
+import { Heading1, Heading2, Heading3, List, ListOrdered, Code2, Quote, Minus, FlaskConical, FunctionSquare, CheckSquare, LayoutTemplate, BookOpen, FlaskRound, Microscope } from 'lucide-react'
 import tippy, { type Instance } from 'tippy.js'
 import type { Editor } from '@tiptap/core'
 import { useAppStore } from '@/store/app'
@@ -67,6 +67,58 @@ const COMMANDS: Command[] = [
         updateNote(activeView.noteId, { template: 'cornell' })
       }
     },
+  },
+  {
+    title: 'Outline', description: 'Study outline scaffold', icon: <BookOpen size={16} />,
+    command: (e) => e.chain().focus().insertContent({
+      type: 'doc',
+      content: [
+        { type: 'heading', attrs: { level: 1 }, content: [{ type: 'text', text: 'Topic' }] },
+        { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'I. Main Concept' }] },
+        { type: 'bulletList', content: [{ type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Key point' }] }] }] },
+        { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'II. Second Concept' }] },
+        { type: 'bulletList', content: [{ type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Key point' }] }] }] },
+        { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'III. Third Concept' }] },
+        { type: 'bulletList', content: [{ type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Key point' }] }] }] },
+      ],
+    }).run(),
+  },
+  {
+    title: 'Problem Set', description: 'Physics problem scaffold', icon: <FlaskRound size={16} />,
+    command: (e) => e.chain().focus().insertContent({
+      type: 'doc',
+      content: [
+        { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'Problem' }] },
+        { type: 'paragraph', content: [{ type: 'text', text: 'State the problem here.' }] },
+        { type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'Given' }] },
+        { type: 'bulletList', content: [{ type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Variable = value' }] }] }] },
+        { type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'Find' }] },
+        { type: 'paragraph', content: [{ type: 'text', text: 'What are you solving for?' }] },
+        { type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'Solution' }] },
+        { type: 'paragraph', content: [{ type: 'text', text: 'Show your work…' }] },
+        { type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'Answer' }] },
+        { type: 'paragraph', content: [{ type: 'text', text: 'Final answer with units.' }] },
+      ],
+    }).run(),
+  },
+  {
+    title: 'Lab Report', description: 'Lab report scaffold', icon: <Microscope size={16} />,
+    command: (e) => e.chain().focus().insertContent({
+      type: 'doc',
+      content: [
+        { type: 'heading', attrs: { level: 1 }, content: [{ type: 'text', text: 'Lab Report' }] },
+        { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'Hypothesis' }] },
+        { type: 'paragraph', content: [{ type: 'text', text: 'State your hypothesis.' }] },
+        { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'Method' }] },
+        { type: 'orderedList', content: [{ type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Step 1' }] }] }] },
+        { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'Results' }] },
+        { type: 'paragraph', content: [{ type: 'text', text: 'Describe your observations and data.' }] },
+        { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'Analysis' }] },
+        { type: 'paragraph', content: [{ type: 'text', text: 'Analyse the results.' }] },
+        { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'Conclusion' }] },
+        { type: 'paragraph', content: [{ type: 'text', text: 'Summarise findings and relate to hypothesis.' }] },
+      ],
+    }).run(),
   },
 ]
 

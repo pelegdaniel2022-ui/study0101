@@ -28,7 +28,7 @@ type ReviewItem =
   | { kind: 'card'; card: FlashCard; noteId: string; noteTitle: string }
 
 export function DailyReviewView() {
-  const { getDueNotes, getDueFlashcards, notes, updateReviewData, updateFlashcardReviewData } = useAppStore()
+  const { getDueNotes, getDueFlashcards, notes, updateReviewData, updateFlashcardReviewData, recordReviewSession, studyStreak } = useAppStore()
 
   const reviewQueue = useMemo<ReviewItem[]>(() => {
     // Due notes
@@ -92,11 +92,17 @@ export function DailyReviewView() {
   // ── Done state ───────────────────────────────────────────────────────────
 
   if (isDone) {
+    recordReviewSession()
     const nextDueNotes = notes.filter((n) => n.reviewData && n.reviewData.nextReview > Date.now()).length
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4 text-center px-8">
         <div className="text-5xl">🎉</div>
         <h2 className="text-2xl font-bold text-[hsl(var(--foreground))]">All caught up!</h2>
+        {studyStreak > 0 && (
+          <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 dark:bg-amber-900/20 text-amber-600 rounded-xl text-sm font-medium">
+            🔥 {studyStreak}-day streak!
+          </div>
+        )}
         <p className="text-[hsl(var(--muted-foreground))] max-w-sm text-sm">
           You reviewed {reviewedCount} item{reviewedCount !== 1 ? 's' : ''} today.
           {nextDueNotes > 0 && ` ${nextDueNotes} note${nextDueNotes !== 1 ? 's' : ''} scheduled for future review.`}
