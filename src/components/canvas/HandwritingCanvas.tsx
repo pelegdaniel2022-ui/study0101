@@ -299,14 +299,15 @@ export function HandwritingCanvas({ noteId }: Props) {
   // ── Pointer event handlers ────────────────────────────────────────────────
 
   const onPointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
-    // Pen-only mode: reject touch if stylus is in range
-    if (penOnly && e.pointerType === 'touch' && activePenId.current !== null) return
-    if (penOnly && e.pointerType === 'touch' && navigator.maxTouchPoints > 0) {
-      // Allow only pen/mouse in pen-only mode
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-expect-error – pointerType is 'touch' here but we check defensively for future paths
-      if (e.pointerType !== 'pen' && e.pointerType !== 'mouse') return
-    }
+    // S Pen detection — Android WebView sometimes reports S Pen as 'touch' with high pressure.
+    // Use pressure threshold as a fallback to distinguish stylus from finger.
+    const isStylus =
+      e.pointerType === 'pen' ||
+      e.pointerType === 'mouse' ||
+      (e.pressure > 0.6 && e.pointerType === 'touch')   // S Pen workaround on some Android builds
+
+    // Pen-only mode: reject finger touches
+    if (penOnly && !isStylus) return
 
     e.preventDefault()
     e.currentTarget.setPointerCapture(e.pointerId)

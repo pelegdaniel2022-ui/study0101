@@ -21,7 +21,7 @@ export interface NoteAttachment {
   id: string
   name: string
   type: 'pdf' | 'image' | 'text' | 'other'
-  dataUrl: string
+  dataUrl?: string
   size: number
   addedAt: number
 }

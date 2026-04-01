@@ -50,8 +50,7 @@ export function DailyReviewView() {
     }))
 
     return [...dueNotes, ...newNotes, ...dueCards]
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [getDueNotes, getDueFlashcards, notes])
 
   const [currentIndex, setCurrentIndex] = useState(0)
   const [revealed, setRevealed] = useState(false)

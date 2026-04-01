@@ -29,9 +29,12 @@ export function ProjectileSim({ v0, angle, gravity, airResistance, onParam }: Pr
     let maxX = 0
     for (let i = 0; i < 5000; i++) {
       const speed = Math.sqrt(vx * vx + vy * vy)
-      const drag = airResistance * speed
-      vx -= (drag * vx / speed || 0) * dt
-      vy = vy - gravity * dt - (drag * vy / speed || 0) * dt
+      const dragAccel = airResistance * speed  // F_drag/m = k*v², coefficient k = airResistance
+      if (speed > 0) {
+        vx -= (dragAccel * vx / speed) * dt
+        vy -= (dragAccel * vy / speed) * dt
+      }
+      vy -= gravity * dt
       x += vx * dt
       y += vy * dt
       if (y < 0 && i > 0) break
@@ -84,7 +87,7 @@ export function ProjectileSim({ v0, angle, gravity, airResistance, onParam }: Pr
       <SimSlider label="v₀ (m/s)" value={v0} min={5} max={50} step={1} onChange={(v) => onParam?.('v0', v)} />
       <SimSlider label="Angle (°)" value={angle} min={5} max={85} step={1} onChange={(v) => onParam?.('angle', v)} />
       <SimSlider label="Gravity (m/s²)" value={gravity} min={1} max={25} step={0.1} onChange={(v) => onParam?.('gravity', v)} />
-      <SimSlider label="Air resistance" value={airResistance} min={0} max={1} step={0.05} onChange={(v) => onParam?.('airResistance', v)} />
+      <SimSlider label="Air resistance k (m⁻¹)" value={airResistance} min={0} max={0.3} step={0.01} onChange={(v) => onParam?.('airResistance', v)} />
     </div>
   )
 }

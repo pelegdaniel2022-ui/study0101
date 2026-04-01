@@ -361,6 +361,16 @@ export const useAppStore = create<AppState>()(
         )
       },
     }),
-    { name: 'physics-study-app' }
+    {
+      name: 'physics-study-app',
+      partialize: (state) => ({
+        ...state,
+        notes: state.notes.map((n) => ({
+          ...n,
+          // Strip binary data from localStorage — stored separately in IndexedDB
+          attachments: n.attachments?.map(({ dataUrl: _d, ...stub }) => stub),
+        })),
+      }),
+    }
   )
 )

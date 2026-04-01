@@ -1,8 +1,9 @@
+import React from 'react'
 import { Extension } from '@tiptap/core'
 import { ReactRenderer } from '@tiptap/react'
 import Suggestion from '@tiptap/suggestion'
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
-import { Heading1, Heading2, Heading3, List, ListOrdered, Code2, Quote, Minus, FlaskConical, FunctionSquare, CheckSquare, LayoutTemplate, BookOpen, FlaskRound, Microscope } from 'lucide-react'
+import { Heading1, Heading2, Heading3, List, ListOrdered, Code2, Quote, Minus, FlaskConical, FunctionSquare, CheckSquare, LayoutTemplate, BookOpen, FlaskRound, Microscope, Sigma, Network } from 'lucide-react'
 import tippy, { type Instance } from 'tippy.js'
 import type { Editor } from '@tiptap/core'
 import { useAppStore } from '@/store/app'
@@ -129,6 +130,99 @@ const COMMANDS: Command[] = [
         { type: 'paragraph', content: [{ type: 'text', text: 'Analyse the results.' }] },
         { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'Conclusion' }] },
         { type: 'paragraph', content: [{ type: 'text', text: 'Summarise findings and relate to hypothesis.' }] },
+      ],
+    }).run(),
+  },
+  {
+    title: 'Derivation',
+    description: 'Scaffold for deriving a formula step-by-step',
+    icon: <Sigma size={16} />,
+    command: (editor) => editor.chain().focus().clearContent().insertContent({
+      type: 'doc',
+      content: [
+        { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'Derivation: [Name]' }] },
+        { type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'Goal' }] },
+        { type: 'paragraph', content: [{ type: 'text', text: 'Prove or derive: ' }] },
+        { type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'Starting Point' }] },
+        { type: 'paragraph', content: [{ type: 'text', text: 'Begin with: ' }] },
+        { type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'Key Principles Used' }] },
+        { type: 'bulletList', content: [
+          { type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', text: '1. ' }] }] },
+          { type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', text: '2. ' }] }] },
+        ]},
+        { type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'Steps' }] },
+        { type: 'orderedList', content: [
+          { type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Step 1: ' }] }] },
+          { type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Step 2: ' }] }] },
+          { type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Step 3: ' }] }] },
+        ]},
+        { type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'Result' }] },
+        { type: 'paragraph', content: [{ type: 'text', text: 'Therefore: ' }] },
+        { type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'Sanity Check' }] },
+        { type: 'paragraph', content: [{ type: 'text', text: 'Dimensional analysis: ' }] },
+        { type: 'paragraph', content: [{ type: 'text', text: 'Limiting cases: ' }] },
+      ],
+    }).run(),
+  },
+  {
+    title: 'Formula Reference',
+    description: 'Structured formula card with variables and usage',
+    icon: <FunctionSquare size={16} />,
+    command: (editor) => editor.chain().focus().clearContent().insertContent({
+      type: 'doc',
+      content: [
+        { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'Formula: [Name]' }] },
+        { type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'Equation' }] },
+        { type: 'paragraph', content: [{ type: 'text', text: '[Write equation here using $...$]' }] },
+        { type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'Variables' }] },
+        { type: 'bulletList', content: [
+          { type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'symbol — name (SI unit)' }] }] },
+          { type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'symbol — name (SI unit)' }] }] },
+        ]},
+        { type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'When to Use' }] },
+        { type: 'paragraph', content: [{ type: 'text', text: 'Apply this formula when: ' }] },
+        { type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'Assumptions / Conditions' }] },
+        { type: 'bulletList', content: [
+          { type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Condition 1' }] }] },
+        ]},
+        { type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'Common Mistakes' }] },
+        { type: 'bulletList', content: [
+          { type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Mistake 1' }] }] },
+        ]},
+        { type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'Related Formulas' }] },
+        { type: 'paragraph', content: [{ type: 'text', text: '[[link to related note]]' }] },
+      ],
+    }).run(),
+  },
+  {
+    title: 'Concept Map',
+    description: 'Core concept with connections, misconceptions, and examples',
+    icon: <Network size={16} />,
+    command: (editor) => editor.chain().focus().clearContent().insertContent({
+      type: 'doc',
+      content: [
+        { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'Concept: [Name]' }] },
+        { type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'Core Idea (one sentence)' }] },
+        { type: 'paragraph', content: [{ type: 'text', text: '' }] },
+        { type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'Mathematical Form' }] },
+        { type: 'paragraph', content: [{ type: 'text', text: '[Main equation]' }] },
+        { type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'Physical Intuition' }] },
+        { type: 'paragraph', content: [{ type: 'text', text: 'Think of it like...' }] },
+        { type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'When It Applies' }] },
+        { type: 'bulletList', content: [
+          { type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Condition' }] }] },
+        ]},
+        { type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'Common Misconceptions' }] },
+        { type: 'bulletList', content: [
+          { type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', text: '❌ Wrong belief → ✓ Correct understanding' }] }] },
+          { type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', text: '❌ Wrong belief → ✓ Correct understanding' }] }] },
+        ]},
+        { type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'Worked Example' }] },
+        { type: 'paragraph', content: [{ type: 'text', text: 'Given: ...' }] },
+        { type: 'paragraph', content: [{ type: 'text', text: 'Find: ...' }] },
+        { type: 'paragraph', content: [{ type: 'text', text: 'Solution: ...' }] },
+        { type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'Connected Concepts' }] },
+        { type: 'paragraph', content: [{ type: 'text', text: '[[Related concept]] — [[Another concept]]' }] },
       ],
     }).run(),
   },

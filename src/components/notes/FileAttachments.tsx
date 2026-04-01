@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { Paperclip, X, FileText, Image, File, FileCode } from 'lucide-react'
 import { useAppStore } from '@/store/app'
+import { saveAttachmentData, getAttachmentData, deleteAttachmentData } from '@/lib/attachments'
 import type { NoteAttachment } from '@/types'
 
 interface Props {
@@ -34,6 +35,13 @@ function TypeIcon({ type }: { type: NoteAttachment['type'] }) {
   return <File size={14} className={cls} />
 }
 
+// Preview state holds metadata + lazily-loaded dataUrl
+interface PreviewState {
+  att: NoteAttachment
+  dataUrl: string | null
+  loading: boolean
+}
+
 export function FileAttachments({ noteId }: Props) {
   const { notes, addAttachment, removeAttachment } = useAppStore()
   const note = notes.find((n) => n.id === noteId)
@@ -41,9 +49,9 @@ export function FileAttachments({ noteId }: Props) {
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [sizeWarning, setSizeWarning] = useState<string | null>(null)
-  const [preview, setPreview] = useState<NoteAttachment | null>(null)
+  const [preview, setPreview] = useState<PreviewState | null>(null)
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? [])
     if (files.length === 0) return
 
@@ -54,30 +62,44 @@ export function FileAttachments({ noteId }: Props) {
         setSizeWarning(`"${file.name}" is ${formatBytes(file.size)} — larger than the 10 MB recommended limit. It will still be attached.`)
       }
 
-      const reader = new FileReader()
-      reader.onload = (evt) => {
-        const dataUrl = evt.target?.result as string
-        const attachment: NoteAttachment = {
-          id: uid(),
-          name: file.name,
-          type: detectType(file),
-          dataUrl,
-          size: file.size,
-          addedAt: Date.now(),
-        }
-        addAttachment(noteId, attachment)
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = (evt) => resolve(evt.target?.result as string)
+        reader.onerror = () => reject(reader.error)
+        reader.readAsDataURL(file)
+      })
+
+      const id = uid()
+
+      // Save binary data to IndexedDB — keep stub (no dataUrl) in Zustand
+      await saveAttachmentData(id, dataUrl)
+
+      const stub: NoteAttachment = {
+        id,
+        name: file.name,
+        type: detectType(file),
+        size: file.size,
+        addedAt: Date.now(),
       }
-      reader.readAsDataURL(file)
+      addAttachment(noteId, stub)
     }
 
     // Reset input so the same file can be re-attached
     e.target.value = ''
   }
 
-  const handleChipClick = (att: NoteAttachment) => {
-    if (att.type === 'image' || att.type === 'pdf') {
-      setPreview(att)
-    }
+  const handleChipClick = async (att: NoteAttachment) => {
+    if (att.type !== 'image' && att.type !== 'pdf') return
+
+    // Open modal immediately with loading state, then fetch from IndexedDB
+    setPreview({ att, dataUrl: null, loading: true })
+    const dataUrl = await getAttachmentData(att.id)
+    setPreview({ att, dataUrl, loading: false })
+  }
+
+  const handleRemove = async (att: NoteAttachment) => {
+    await deleteAttachmentData(att.id)
+    removeAttachment(noteId, att.id)
   }
 
   if (attachments.length === 0 && !sizeWarning) {
@@ -134,7 +156,7 @@ export function FileAttachments({ noteId }: Props) {
                 <span className="text-[hsl(var(--muted-foreground))]">{formatBytes(att.size)}</span>
               </button>
               <button
-                onClick={() => removeAttachment(noteId, att.id)}
+                onClick={() => handleRemove(att)}
                 className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors ml-0.5"
                 title="Remove attachment"
               >
@@ -169,20 +191,32 @@ export function FileAttachments({ noteId }: Props) {
             >
               <X size={16} />
             </button>
-            <p className="text-sm font-medium mb-3 pr-8">{preview.name}</p>
+            <p className="text-sm font-medium mb-3 pr-8">{preview.att.name}</p>
 
-            {preview.type === 'image' && (
+            {preview.loading && (
+              <div className="flex items-center justify-center h-40 text-[hsl(var(--muted-foreground))] text-sm">
+                Loading…
+              </div>
+            )}
+
+            {!preview.loading && preview.dataUrl === null && (
+              <div className="flex items-center justify-center h-40 text-[hsl(var(--muted-foreground))] text-sm">
+                File data not found.
+              </div>
+            )}
+
+            {!preview.loading && preview.dataUrl && preview.att.type === 'image' && (
               <img
                 src={preview.dataUrl}
-                alt={preview.name}
+                alt={preview.att.name}
                 className="max-w-full max-h-[75vh] object-contain rounded"
               />
             )}
 
-            {preview.type === 'pdf' && (
+            {!preview.loading && preview.dataUrl && preview.att.type === 'pdf' && (
               <iframe
                 src={preview.dataUrl}
-                title={preview.name}
+                title={preview.att.name}
                 className="w-[720px] max-w-full h-[75vh] rounded border border-[hsl(var(--border))]"
               />
             )}

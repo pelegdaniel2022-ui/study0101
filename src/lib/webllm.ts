@@ -44,5 +44,9 @@ export function unloadWebLLM() {
 }
 
 export function isWebGPUSupported(): boolean {
+  // WebGPU is NOT available in Android WebView (as of Android 14)
+  // even on devices with capable GPUs like Snapdragon 8 Gen 3
+  const isAndroidWebView = /Android/i.test(navigator.userAgent)
+  if (isAndroidWebView) return false
   return typeof navigator !== 'undefined' && 'gpu' in navigator
 }
