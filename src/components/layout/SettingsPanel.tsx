@@ -1,15 +1,25 @@
 import { useState } from 'react'
 import JSZip from 'jszip'
 import { useAIStore } from '@/store/ai'
+import type { LocalModelId } from '@/store/ai'
 import { useAppStore } from '@/store/app'
-import { Eye, EyeOff, Key, Moon, Sun, Smartphone, Download, Loader2 } from 'lucide-react'
+import { Eye, EyeOff, Key, Moon, Sun, Smartphone, Download, Loader2, Cpu, Cloud } from 'lucide-react'
 import { notesToObsidianVault } from '@/lib/tiptapToMarkdown'
+import { loadLocalModel, isModelLoaded } from '@/lib/localAI'
+
+const LOCAL_MODELS: Array<{ id: LocalModelId; label: string; size: string }> = [
+  { id: 'Phi-3.5-mini-instruct-q4f16_1-MLC', label: 'Phi-3.5 Mini (3.8B)', size: '~2.4 GB' },
+  { id: 'gemma-2-2b-it-q4f16_1-MLC', label: 'Gemma 2 (2B)', size: '~1.5 GB' },
+]
 
 export function SettingsPanel() {
-  const { apiKeys, setAPIKeys } = useAIStore()
+  const { apiKeys, setAPIKeys, aiMode, setAIMode, localModelId, setLocalModelId } = useAIStore()
   const { darkMode, toggleDarkMode, notes, courses, lectures } = useAppStore()
   const [show, setShow] = useState({ openai: false, perplexity: false, anthropic: false })
   const [exportStatus, setExportStatus] = useState<'idle' | 'exporting' | 'done'>('idle')
+  const [downloadStatus, setDownloadStatus] = useState<'idle' | 'downloading' | 'done'>('idle')
+  const [downloadProgress, setDownloadProgress] = useState(0)
+  const [downloadText, setDownloadText] = useState('')
 
   async function exportObsidian() {
     if (notes.length === 0) return
@@ -44,6 +54,21 @@ export function SettingsPanel() {
       setTimeout(() => setExportStatus('idle'), 4000)
     } catch {
       setExportStatus('idle')
+    }
+  }
+
+  async function handleDownloadModel() {
+    if (downloadStatus === 'downloading') return
+    setDownloadStatus('downloading')
+    setDownloadProgress(0)
+    try {
+      await loadLocalModel(localModelId, (progress, text) => {
+        setDownloadProgress(Math.round(progress * 100))
+        setDownloadText(text)
+      })
+      setDownloadStatus('done')
+    } catch {
+      setDownloadStatus('idle')
     }
   }
 
@@ -122,6 +147,76 @@ export function SettingsPanel() {
             />
           </button>
         </div>
+      </section>
+
+      {/* Local AI */}
+      <section className="mb-8">
+        <div className="flex items-center gap-2 mb-4">
+          <Cpu size={16} className="text-[hsl(var(--primary))]" />
+          <h2 className="font-semibold">AI Mode</h2>
+        </div>
+        <p className="text-xs text-[hsl(var(--muted-foreground))] mb-4">
+          Local mode runs AI entirely on your device — no API key needed, works offline, completely private.
+          Requires ~1.5–2.4 GB one-time download. Runs at ~10–20 tokens/sec on the Tab S10.
+        </p>
+        <div className="flex gap-2 mb-4">
+          <button
+            onClick={() => setAIMode('cloud')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-medium transition-colors ${aiMode === 'cloud' ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.08)] text-[hsl(var(--primary))]' : 'border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))]'}`}
+          >
+            <Cloud size={14} /> Cloud (OpenAI)
+          </button>
+          <button
+            onClick={() => setAIMode('local')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-medium transition-colors ${aiMode === 'local' ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.08)] text-[hsl(var(--primary))]' : 'border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))]'}`}
+          >
+            <Cpu size={14} /> Local (on-device)
+          </button>
+        </div>
+        {aiMode === 'local' && (
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] block mb-2">Model</label>
+              <div className="space-y-2">
+                {LOCAL_MODELS.map((m) => (
+                  <button
+                    key={m.id}
+                    onClick={() => setLocalModelId(m.id)}
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl border text-sm transition-colors ${localModelId === m.id ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.06)]' : 'border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))]'}`}
+                  >
+                    <span className={localModelId === m.id ? 'text-[hsl(var(--primary))] font-medium' : ''}>{m.label}</span>
+                    <span className="text-xs text-[hsl(var(--muted-foreground))]">{m.size}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              {downloadStatus === 'downloading' ? (
+                <div>
+                  <div className="flex items-center justify-between text-xs mb-1.5">
+                    <span className="text-[hsl(var(--muted-foreground))] truncate mr-2">{downloadText || 'Loading…'}</span>
+                    <span className="text-[hsl(var(--primary))] font-mono shrink-0">{downloadProgress}%</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-[hsl(var(--muted))] rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-[hsl(var(--primary))] transition-all duration-200"
+                      style={{ width: `${downloadProgress}%` }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={handleDownloadModel}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[hsl(var(--primary))] text-white text-sm font-medium hover:opacity-90 transition-opacity"
+                >
+                  {downloadStatus === 'done' || isModelLoaded(localModelId)
+                    ? <><Cpu size={14} /> Model ready</>
+                    : <><Download size={14} /> Download model</>}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Export */}

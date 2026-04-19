@@ -3,9 +3,10 @@ import { useAIStore } from '@/store/ai'
 import { useAppStore } from '@/store/app'
 import { searchNotes } from '@/lib/rag'
 import OpenAI from 'openai'
-import { X, Send, Trash2, Sparkles, Bot } from 'lucide-react'
+import { X, Send, Trash2, Sparkles, Bot, Cpu } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import katex from 'katex'
+import { localChat, isModelLoaded } from '@/lib/localAI'
 
 const SYSTEM_PROMPT = `You are an expert physics tutor. You help university students understand physics concepts clearly and intuitively. When relevant, use the student's own notes as context.
 
@@ -23,62 +24,82 @@ interface Props {
 }
 
 export function AISidebar({ noteId, onClose }: Props) {
-  const { apiKeys, chatHistory, addMessage, clearChat, isThinking, setThinking } = useAIStore()
+  const { apiKeys, chatHistory, addMessage, clearChat, isThinking, setThinking, aiMode, localModelId } = useAIStore()
   const { notes } = useAppStore()
   const messages = chatHistory[noteId] ?? []
   const [input, setInput] = useState('')
+  const [streamingReply, setStreamingReply] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, isThinking])
+  }, [messages, isThinking, streamingReply])
+
+  const canSend = aiMode === 'local'
+    ? isModelLoaded(localModelId)
+    : !!apiKeys.openai
 
   async function send() {
     const text = input.trim()
-    if (!text || !apiKeys.openai || isThinking) return
+    if (!text || !canSend || isThinking) return
     setInput('')
     addMessage(noteId, { role: 'user', content: text })
     setThinking(true)
+    setStreamingReply('')
+
+    // Current note context
+    const currentNote = notes.find((n) => n.id === noteId)
+    const noteCtx = currentNote?.content
+      ? `\n\nCurrent note "${currentNote.title}":\n${extractText(currentNote.content)}`
+      : ''
+
+    const history = messages.slice(-10).map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }))
+    const allMessages = [
+      { role: 'system' as const, content: SYSTEM_PROMPT + noteCtx },
+      ...history,
+      { role: 'user' as const, content: text },
+    ]
 
     try {
-      const client = new OpenAI({ apiKey: apiKeys.openai, dangerouslyAllowBrowser: true })
+      if (aiMode === 'local') {
+        let fullReply = ''
+        await localChat(allMessages, (delta) => {
+          fullReply += delta
+          setStreamingReply(fullReply)
+        })
+        setStreamingReply('')
+        addMessage(noteId, { role: 'assistant', content: fullReply || 'No response.' })
+      } else {
+        const client = new OpenAI({ apiKey: apiKeys.openai, dangerouslyAllowBrowser: true })
 
-      // RAG: find relevant note chunks
-      let context = ''
-      try {
-        const hits = await searchNotes(apiKeys.openai, text, 4)
-        if (hits.length) {
-          const noteMap = Object.fromEntries(notes.map((n) => [n.id, n.title]))
-          context = '\n\nRelevant excerpts from your notes:\n' +
-            hits.map((h) => `[${noteMap[h.noteId] ?? 'Note'}]: ${h.text}`).join('\n\n')
-        }
-      } catch { /* RAG optional */ }
+        // RAG: find relevant note chunks
+        let context = ''
+        try {
+          const hits = await searchNotes(apiKeys.openai, text, 4)
+          if (hits.length) {
+            const noteMap = Object.fromEntries(notes.map((n) => [n.id, n.title]))
+            context = '\n\nRelevant excerpts from your notes:\n' +
+              hits.map((h) => `[${noteMap[h.noteId] ?? 'Note'}]: ${h.text}`).join('\n\n')
+          }
+        } catch { /* RAG optional */ }
 
-      // Current note context
-      const currentNote = notes.find((n) => n.id === noteId)
-      const noteCtx = currentNote?.content
-        ? `\n\nCurrent note "${currentNote.title}":\n${extractText(currentNote.content)}`
-        : ''
+        allMessages[0].content = SYSTEM_PROMPT + noteCtx + context
 
-      const history = messages.slice(-10).map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }))
+        const resp = await client.chat.completions.create({
+          model: 'gpt-4o',
+          messages: allMessages,
+        })
 
-      const resp = await client.chat.completions.create({
-        model: 'gpt-4o',
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT + noteCtx + context },
-          ...history,
-          { role: 'user', content: text },
-        ],
-      })
-
-      const reply = resp.choices[0]?.message?.content ?? 'No response.'
-      addMessage(noteId, { role: 'assistant', content: reply })
+        const reply = resp.choices[0]?.message?.content ?? 'No response.'
+        addMessage(noteId, { role: 'assistant', content: reply })
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Unknown error'
       addMessage(noteId, { role: 'assistant', content: `Error: ${msg}` })
     } finally {
       setThinking(false)
+      setStreamingReply('')
     }
   }
 
@@ -99,11 +120,12 @@ export function AISidebar({ noteId, onClose }: Props) {
     <div className="flex flex-col w-80 border-l border-[hsl(var(--border))] bg-[hsl(var(--background))] shrink-0">
       {/* Header */}
       <div className="flex items-center gap-2 px-3 py-2.5 border-b border-[hsl(var(--border))]">
-        <Bot size={15} className="text-[hsl(var(--primary))]" />
+        {aiMode === 'local' ? <Cpu size={15} className="text-[hsl(var(--primary))]" /> : <Bot size={15} className="text-[hsl(var(--primary))]" />}
         <span className="text-sm font-semibold flex-1">AI Tutor</span>
-        {!apiKeys.openai && (
-          <span className="text-xs text-amber-500 mr-1">No API key</span>
-        )}
+        {aiMode === 'local'
+          ? <span className="text-xs text-emerald-600 mr-1">On-device</span>
+          : !apiKeys.openai && <span className="text-xs text-amber-500 mr-1">No API key</span>
+        }
         <button onClick={() => clearChat(noteId)} className="p-1 hover:text-red-500 text-[hsl(var(--muted-foreground))]" title="Clear chat">
           <Trash2 size={13} />
         </button>
@@ -123,7 +145,10 @@ export function AISidebar({ noteId, onClose }: Props) {
         {messages.map((msg) => (
           <MessageBubble key={msg.id} role={msg.role} content={msg.content} />
         ))}
-        {isThinking && (
+        {streamingReply && (
+          <MessageBubble role="assistant" content={streamingReply} />
+        )}
+        {isThinking && !streamingReply && (
           <div className="flex gap-2 items-center text-xs text-[hsl(var(--muted-foreground))]">
             <div className="flex gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--primary))] animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -138,9 +163,11 @@ export function AISidebar({ noteId, onClose }: Props) {
 
       {/* Input */}
       <div className="px-3 pb-3 pt-1 border-t border-[hsl(var(--border))]">
-        {!apiKeys.openai && (
+        {!canSend && (
           <p className="text-xs text-amber-600 mb-2 text-center">
-            Add your OpenAI API key in Settings to use the tutor.
+            {aiMode === 'local'
+              ? 'Download a local model in Settings first.'
+              : 'Add your OpenAI API key in Settings to use the tutor.'}
           </p>
         )}
         <div className="flex gap-2 items-end">
