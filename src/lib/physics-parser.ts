@@ -1,7 +1,10 @@
 import type { SimConfig } from '@/types'
 
+// Extend SimConfig to include the two new simulation types
+type ExtendedSimType = SimConfig['type'] | 'circular' | 'energy'
+
 interface PatternMatch {
-  sim: SimConfig
+  sim: { type: ExtendedSimType; params: Record<string, number> }
   label: string
 }
 

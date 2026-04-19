@@ -1,22 +1,17 @@
 import { useEffect, useRef } from 'react'
+import { SimSlider } from './PendulumSim'
 
 interface Props {
-  mass: number       // kg
-  height: number     // m initial drop height
-  gravity: number    // m/s²
+  height: number   // initial height in metres (1–10)
+  mass: number     // kg (0.1–5)
   onParam?: (k: string, v: number) => void
 }
 
-export function EnergySim({ mass, height, gravity, onParam }: Props) {
+const G = 9.81
+
+export function EnergySim({ height, mass, onParam }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const stateRef = useRef({ y: 0, vy: 0, bouncing: false })
-  const animRef = useRef<number>(0)
-
-  void onParam
-
-  useEffect(() => {
-    stateRef.current = { y: 0, vy: 0, bouncing: false }
-  }, [mass, height, gravity])
+  const animRef  = useRef<number>(0)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -24,108 +19,127 @@ export function EnergySim({ mass, height, gravity, onParam }: Props) {
     const ctx = canvas.getContext('2d')!
     const W = canvas.width
     const H = canvas.height
-    const groundY = H - 60
-    const maxPxH = groundY - 40
-    const pxPerMetre = Math.min(maxPxH / Math.max(height, 0.5), 60)
-    const ballR = 14
+
+    const totalE = mass * G * height   // J — conserved
+    let t = 0
     const dt = 0.016
 
-    // Reset
-    stateRef.current = { y: 0, vy: 0, bouncing: false }
+    // Parabolic track geometry
+    // y(x) = height * (1 - (x/xMax)²) — ball starts at x=0, h=height, rolls to x=xMax, h=0
+    // We'll map to canvas pixels
+    const leftMargin = 12
+    const rightMargin = 80   // space for bar chart
+    const bottomPad = 32
+    const topPad = 20
+    const trackW = W - leftMargin - rightMargin
+    const trackH = H - topPad - bottomPad
+
+    // Period for oscillation: use pendulum-like period for visual variety
+    const period = 2.5   // seconds for one sweep across the track
+
+    function hAtT(time: number): number {
+      // ball sweeps back and forth — use |cos(ωt)| so h goes 0→height→0→height…
+      const phase = (time % period) / period   // 0…1
+      const pos = Math.abs(Math.cos(Math.PI * phase))  // 1→0→1 half period
+      return height * pos * pos  // squared for parabolic feel
+    }
 
     function draw() {
-      const s = stateRef.current
-      s.vy += gravity * dt
-      s.y += s.vy * dt
-      const maxY = height
-      if (s.y >= maxY) { s.y = maxY; s.vy = -Math.abs(s.vy) * 0.85 }
-
-      const ballPxY = groundY - (maxY - s.y) * pxPerMetre - ballR
-
-      const KE = 0.5 * mass * s.vy * s.vy
-      const PE = mass * gravity * (maxY - s.y)
-      const totalE = mass * gravity * maxY
-      const barMaxH = 80
-      const barW = 24
-
       ctx.clearRect(0, 0, W, H)
 
-      // Ground
-      ctx.fillStyle = 'hsl(240 12% 22%)'
-      ctx.fillRect(0, groundY, W, 4)
+      const h = hAtT(t)
+      const v = Math.sqrt(2 * G * Math.max(height - h, 0))
+      const ke = 0.5 * mass * v * v
+      const pe = mass * G * h
 
-      // Height reference line
-      ctx.strokeStyle = 'hsl(240 12% 30%)'
-      ctx.setLineDash([3, 3])
-      ctx.lineWidth = 1
+      // ── Track curve ──────────────────────────────────────────────────────
       ctx.beginPath()
-      ctx.moveTo(20, groundY - maxY * pxPerMetre)
-      ctx.lineTo(W - 20, groundY - maxY * pxPerMetre)
+      ctx.moveTo(leftMargin, topPad)
+      for (let px = 0; px <= trackW; px++) {
+        const xFrac = px / trackW
+        const hFrac = 1 - xFrac * xFrac
+        const py = topPad + trackH * (1 - hFrac * (height / (height || 1)))
+        if (px === 0) ctx.moveTo(leftMargin + px, py)
+        else ctx.lineTo(leftMargin + px, py)
+      }
+      ctx.strokeStyle = '#94a3b8'
+      ctx.lineWidth = 2
       ctx.stroke()
-      ctx.setLineDash([])
 
-      // Ball
+      // Baseline
       ctx.beginPath()
-      ctx.arc(W / 2, ballPxY, ballR, 0, Math.PI * 2)
+      ctx.moveTo(leftMargin, topPad + trackH)
+      ctx.lineTo(leftMargin + trackW, topPad + trackH)
+      ctx.stroke()
+
+      // ── Ball position ─────────────────────────────────────────────────────
+      // x fraction: ball sweeps from left to right, mirroring hAtT
+      const phase = (t % period) / period
+      const xFrac = Math.abs(1 - 2 * (phase % 1))  // 0→1→0
+      const hFrac = h / (height || 1)
+      const bx = leftMargin + xFrac * trackW
+      const by = topPad + trackH * (1 - hFrac * (height / (height || 1)))
+
+      ctx.beginPath()
+      ctx.arc(bx, by, 10, 0, Math.PI * 2)
       ctx.fillStyle = '#7c3aed'
       ctx.fill()
 
-      // Energy bars (right side)
-      const barX = W - 90
-      const barBaseY = groundY - 10
-      const peH = totalE > 0 ? (PE / totalE) * barMaxH : 0
-      const keH = totalE > 0 ? (KE / totalE) * barMaxH : 0
+      // ── Bar chart ─────────────────────────────────────────────────────────
+      const barX = W - rightMargin + 8
+      const barW = 20
+      const maxBarH = trackH
+      const barBottom = topPad + trackH
 
-      // PE bar
+      const peBarH = totalE > 0 ? (pe / totalE) * maxBarH : 0
+      const keBarH = totalE > 0 ? (ke / totalE) * maxBarH : 0
+
+      // PE bar (green)
+      ctx.fillStyle = '#22c55e'
+      ctx.fillRect(barX, barBottom - peBarH, barW, peBarH)
+
+      // KE bar (blue) stacked on top of PE
       ctx.fillStyle = '#3b82f6'
-      ctx.fillRect(barX, barBaseY - peH, barW, peH)
-      ctx.fillStyle = '#94a3b8'
-      ctx.font = '10px Inter, system-ui'
-      ctx.fillText('PE', barX + 4, barBaseY + 12)
+      ctx.fillRect(barX, barBottom - peBarH - keBarH, barW, keBarH)
 
-      // KE bar
-      ctx.fillStyle = '#f59e0b'
-      ctx.fillRect(barX + barW + 8, barBaseY - keH, barW, keH)
-      ctx.fillText('KE', barX + barW + 12, barBaseY + 12)
+      // Bar border
+      ctx.strokeStyle = '#94a3b8'
+      ctx.lineWidth = 1
+      ctx.strokeRect(barX, topPad, barW, maxBarH)
 
-      // Labels
-      ctx.fillStyle = '#94a3b8'
-      ctx.font = '11px Inter, system-ui'
-      ctx.fillText(`KE = ${KE.toFixed(1)} J`, 8, H - 32)
-      ctx.fillText(`PE = ${PE.toFixed(1)} J`, 8, H - 18)
-      ctx.fillText(`E  = ${(KE + PE).toFixed(1)} J`, 8, H - 4)
+      // Legend
+      ctx.font = '9px system-ui'
+      ctx.fillStyle = '#3b82f6'
+      ctx.fillText('KE', barX + 2, topPad - 3)
+      ctx.fillStyle = '#22c55e'
+      ctx.fillText('PE', barX + 2, topPad + 10)
 
+      // ── Formula display ───────────────────────────────────────────────────
+      ctx.font = '10px system-ui'
+      ctx.fillStyle = '#64748b'
+      ctx.fillText(`KE = ${ke.toFixed(1)} J`, 8, H - 20)
+      ctx.fillText(`PE = ${pe.toFixed(1)} J`, 8, H - 8)
+      ctx.fillStyle = '#7c3aed'
+      ctx.font = 'bold 10px system-ui'
+      ctx.fillText(`E = ${totalE.toFixed(1)} J`, trackW / 2 - 20, H - 8)
+
+      t += dt
       animRef.current = requestAnimationFrame(draw)
     }
 
     animRef.current = requestAnimationFrame(draw)
     return () => cancelAnimationFrame(animRef.current)
-  }, [mass, height, gravity])
+  }, [height, mass])
 
   return (
-    <div className="flex flex-col items-center gap-4">
-      <canvas ref={canvasRef} width={340} height={320} className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.3)]" />
-      <div className="grid grid-cols-3 gap-3 w-full">
-        <Slider label="Mass (kg)" min={0.1} max={10} step={0.1} value={mass} onChange={(v) => onParam?.('mass', v)} />
-        <Slider label="Height (m)" min={0.5} max={8} step={0.5} value={height} onChange={(v) => onParam?.('height', v)} />
-        <Slider label="g (m/s²)" min={1} max={20} step={0.5} value={gravity} onChange={(v) => onParam?.('gravity', v)} />
+    <div className="flex flex-col gap-2">
+      <canvas ref={canvasRef} width={280} height={240} className="rounded-lg bg-[hsl(var(--muted)/0.4)]" />
+      <div className="flex gap-4 text-xs justify-center">
+        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-blue-500 inline-block" />KE = ½mv²</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-green-500 inline-block" />PE = mgh</span>
       </div>
-    </div>
-  )
-}
-
-function Slider({ label, min, max, step, value, onChange }: {
-  label: string; min: number; max: number; step: number; value: number; onChange?: (v: number) => void
-}) {
-  return (
-    <div>
-      <div className="flex justify-between text-xs text-[hsl(var(--muted-foreground))] mb-1">
-        <span>{label}</span><span className="font-mono">{value}</span>
-      </div>
-      <input type="range" min={min} max={max} step={step} value={value}
-        onChange={(e) => onChange?.(parseFloat(e.target.value))}
-        className="w-full accent-[hsl(var(--primary))]"
-      />
+      <SimSlider label="Height (m)" value={height} min={1}   max={10}  step={0.5} onChange={(v) => onParam?.('height', v)} />
+      <SimSlider label="Mass (kg)"  value={mass}   min={0.1} max={5}   step={0.1} onChange={(v) => onParam?.('mass', v)} />
     </div>
   )
 }

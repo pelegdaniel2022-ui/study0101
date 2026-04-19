@@ -52,6 +52,16 @@ export function NoteEditor({ noteId }: Props) {
   const noteIdRef = useRef(noteId)
   useEffect(() => { noteIdRef.current = noteId }, [noteId])
 
+  // ESC key exits fullscreen
+  useEffect(() => {
+    if (!fullscreenNote) return
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setFullscreenNote(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [fullscreenNote, setFullscreenNote])
+
   // Stable WikiLink extension (created once per component instance)
   const WikiLinkExtension = useMemo(
     () => createWikiLinkExtension(() => noteIdRef.current),
@@ -168,7 +178,7 @@ export function NoteEditor({ noteId }: Props) {
           <button
             onClick={() => setFullscreenNote(!fullscreenNote)}
             className="p-1.5 rounded-lg hover:bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]"
-            title={fullscreenNote ? 'Exit fullscreen (Esc)' : 'Fullscreen'}
+            title={fullscreenNote ? 'Exit fullscreen' : 'Fullscreen'}
           >
             {fullscreenNote ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
           </button>

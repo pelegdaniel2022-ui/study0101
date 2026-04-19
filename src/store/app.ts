@@ -52,6 +52,10 @@ interface AppState {
   // PKM — spaced repetition
   updateReviewData: (noteId: string, data: ReviewData) => void
 
+  // Flashcards
+  saveFlashcards: (noteId: string, cards: FlashCard[]) => void
+  updateFlashcardReview: (noteId: string, cardId: string, data: ReviewData) => void
+
   // PKM — favorites
   toggleFavorite: (noteId: string) => void
 
@@ -248,6 +252,25 @@ export const useAppStore = create<AppState>()(
         notes: s.notes.map((n) =>
           n.id === noteId ? { ...n, reviewData: data, updatedAt: Date.now() } : n
         ),
+      })),
+
+      saveFlashcards: (noteId, cards) => set((s) => ({
+        notes: s.notes.map((n) =>
+          n.id === noteId ? { ...n, flashcards: cards, updatedAt: Date.now() } : n
+        ),
+      })),
+
+      updateFlashcardReview: (noteId, cardId, data) => set((s) => ({
+        notes: s.notes.map((n) => {
+          if (n.id !== noteId || !n.flashcards) return n
+          return {
+            ...n,
+            flashcards: n.flashcards.map((c) =>
+              c.id === cardId ? { ...c, reviewData: data } : c
+            ),
+            updatedAt: Date.now(),
+          }
+        }),
       })),
 
       // ── PKM — favorites ───────────────────────────────────────────────────

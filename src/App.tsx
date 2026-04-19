@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react'
 import { Sidebar } from '@/components/sidebar/Sidebar'
 import { MainContent } from '@/components/layout/MainContent'
 import { SearchModal } from '@/components/layout/SearchModal'
+import { QuickCapture } from '@/components/layout/QuickCapture'
 import { useAppStore } from '@/store/app'
 import { useFullscreenKey } from '@/hooks/useFullscreen'
 
@@ -72,6 +73,7 @@ function App() {
     <>
       <Sidebar />
       <MainContent />
+      <QuickCapture />
       {searchOpen && <SearchModal onClose={() => setSearchOpen(false)} />}
 
       {/* Quick Capture — always-visible floating button */}
