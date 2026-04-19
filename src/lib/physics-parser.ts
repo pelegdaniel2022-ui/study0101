@@ -41,6 +41,22 @@ const PATTERNS: Array<{ regex: RegExp; build: (m: RegExpMatchArray) => PatternMa
       sim: { type: 'wave', params: { frequency: 1, amplitude: 1, speed: 2, sources: 2 } },
     }),
   },
+  {
+    // Circular motion: F = mv²/r  or  v²/r
+    regex: /F_?c?\s*=\s*m\s*v\s*[²^2]?\s*\/\s*r|v\s*[²^2]\s*\/\s*r|centripetal/i,
+    build: () => ({
+      label: 'Circular Motion (Fc = mv²/r)',
+      sim: { type: 'circular', params: { radius: 1.0, mass: 1.0, speed: 2.0 } },
+    }),
+  },
+  {
+    // Energy conservation: mgh  or  KE + PE  or  ½mv²
+    regex: /m\s*g\s*h|KE\s*\+\s*PE|½\s*m\s*v\s*[²^2]|\\frac\{1\}\{2\}\s*m\s*v/i,
+    build: () => ({
+      label: 'Energy Conservation (KE + PE = E)',
+      sim: { type: 'energy', params: { height: 5, mass: 1.0 } },
+    }),
+  },
 ]
 
 export function detectSimulation(latex: string): PatternMatch | null {
